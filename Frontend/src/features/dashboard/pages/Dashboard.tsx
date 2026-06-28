@@ -7,7 +7,7 @@ import {
 } from '@/src/components/ui/shared';
 import { 
   Plus, Calendar, Users, HeartPulse, Receipt, ShieldCheck, 
-  Activity, ArrowUpRight, CheckSquare, Bell, ArrowRight
+  Activity, ArrowUpRight, CheckSquare, Bell, ArrowRight, FileText
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -17,6 +17,9 @@ export default function Dashboard() {
   const addNotification = useAppStore((state) => state.addNotification);
   const addAuditLog = useAppStore((state) => state.addAuditLog);
   const pins = useAppStore((state) => state.pins);
+  const currentUser = useAppStore((state) => state.currentUser);
+  const patients = useAppStore((state) => state.patients);
+  const appointments = useAppStore((state) => state.appointments);
 
   // Quick state for widgets
   const [stickyNotes, setStickyNotes] = useState<string[]>([
@@ -80,9 +83,212 @@ export default function Dashboard() {
     navigate('/ai-chat');
   };
 
-  // SVG CHART VALUES (GORGEOUS MODERN GRADIENTS!)
-  const revenuePoints = [4200, 5800, 5100, 7400, 6900, 9500, 11200];
-  const chartDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const patientRecord = patients.find(p => p.email.toLowerCase() === currentUser?.email?.toLowerCase());
+  const patientAppointments = appointments.filter(a => a.patientName === currentUser?.name || a.patientId === currentUser?.id);
+
+  const mockPatientRecord = {
+    id: 'PAT-NEW',
+    name: currentUser?.name || 'Valued Patient',
+    email: currentUser?.email || 'patient@hospitalagent.ai',
+    phone: '+1 (555) 000-0000',
+    dob: '1995-06-15',
+    gender: 'Male',
+    bloodType: 'O+',
+    address: 'Primary Residence Address',
+    allergies: ['None reported'],
+    medicalHistory: [
+      { condition: 'Routine Physical', diagnosedDate: '2026-01-10', status: 'Completed', notes: 'All values within normal baseline ranges' }
+    ],
+    documents: [
+      { id: 'DOCX-NEW', name: 'Welcome_Information_Packet.pdf', type: 'PDF', uploadedAt: 'Just now', size: '1.2 MB' }
+    ]
+  };
+
+  if (currentUser?.role === 'PATIENT') {
+    const record = patientRecord || mockPatientRecord;
+    const nextApp = patientAppointments[0];
+
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        {/* Header Greeting */}
+        <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-gradient-to-r from-emerald-500/10 via-teal-500/5 to-transparent p-6 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+                Welcome back, {currentUser?.name}!
+              </h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Your medical dashboard summary, upcoming appointments, and care network updates.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Patient Portal Active
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard 
+            title="Next Consultation"
+            value={nextApp ? `${nextApp.date}` : 'No visits scheduled'}
+            subtext={nextApp ? `${nextApp.time} with ${nextApp.doctorName}` : 'Book a new session'}
+            trend={nextApp ? { value: 'Confirmed', isPositive: true } : undefined}
+            icon={<Calendar size={16} />}
+            onClick={() => navigate('/appointments')}
+            accent="from-blue-500 to-indigo-500"
+          />
+          <StatCard 
+            title="My Health Files"
+            value={`${record.documents.length} document${record.documents.length !== 1 ? 's' : ''}`}
+            subtext="Available for offline download"
+            icon={<FileText size={16} />}
+            onClick={() => navigate('/patients')}
+            accent="from-emerald-500 to-teal-500"
+          />
+          <StatCard 
+            title="Outstanding Balance"
+            value="$0.00"
+            subtext="All invoices cleared"
+            trend={{ value: 'Paid', isPositive: true }}
+            icon={<Receipt size={16} />}
+            onClick={() => navigate('/patients')}
+            accent="from-amber-500 to-yellow-500"
+          />
+          <StatCard 
+            title="Registered Care Plan"
+            value="Active"
+            subtext="Standard Medical Benefits"
+            icon={<ShieldCheck size={16} />}
+            onClick={() => {}}
+            accent="from-purple-500 to-pink-500"
+          />
+        </div>
+
+        {/* Workspace Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Vitals and Medical History */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Vitals Card */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                My Vitals (Latest Checkup)
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-mono text-zinc-400 block">Blood Pressure</span>
+                  <span className="text-base font-bold text-zinc-950 dark:text-white mt-1 block">118/76</span>
+                  <span className="text-[9px] text-emerald-500 font-mono mt-0.5 block">Optimal</span>
+                </div>
+                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-mono text-zinc-400 block">Heart Rate</span>
+                  <span className="text-base font-bold text-zinc-950 dark:text-white mt-1 block">72 bpm</span>
+                  <span className="text-[9px] text-emerald-500 font-mono mt-0.5 block">Normal</span>
+                </div>
+                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-mono text-zinc-400 block">Pulse Oximetry</span>
+                  <span className="text-base font-bold text-zinc-950 dark:text-white mt-1 block">98%</span>
+                  <span className="text-[9px] text-emerald-500 font-mono mt-0.5 block">Optimal</span>
+                </div>
+                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-mono text-zinc-400 block">Body Temp</span>
+                  <span className="text-base font-bold text-zinc-950 dark:text-white mt-1 block">98.6 °F</span>
+                  <span className="text-[9px] text-emerald-500 font-mono mt-0.5 block">Normal</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Medical History */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Medical Records & Active Diagnostics
+              </h3>
+              {record.medicalHistory.length > 0 ? (
+                <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                  {record.medicalHistory.map((item, idx) => (
+                    <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-start justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-semibold text-zinc-900 dark:text-white">{item.condition}</span>
+                        <p className="text-[11px] text-zinc-500 mt-0.5">{item.notes}</p>
+                        <span className="text-[9px] text-zinc-400 font-mono block mt-1">Diagnosed: {item.diagnosedDate}</span>
+                      </div>
+                      <StatusBadge status={item.status === 'Active' ? 'warning' : 'success'} text={item.status} />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500">No medical condition history recorded.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Files / Actions */}
+          <div className="space-y-6">
+            {/* My Care Network / Doctor Panel */}
+            {nextApp && (
+              <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+                <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                  Upcoming Consult Details
+                </h3>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold">
+                    <HeartPulse size={20} />
+                  </div>
+                  <div>
+                    <span className="text-xs font-semibold text-zinc-900 dark:text-white block">{nextApp.doctorName}</span>
+                    <span className="text-[10px] text-zinc-400 block">{nextApp.type} Appointment</span>
+                  </div>
+                </div>
+                <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-150 dark:border-zinc-800 text-xs text-zinc-500 space-y-1">
+                  <div className="flex justify-between">
+                    <span>Date:</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{nextApp.date}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Time Slot:</span>
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">{nextApp.time}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Status:</span>
+                    <span className="font-semibold text-emerald-500">{nextApp.status}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Health Files & Uploads */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                My Clinical Documents ({record.documents.length})
+              </h3>
+              <div className="space-y-2">
+                {record.documents.map((doc, idx) => (
+                  <div 
+                    key={idx} 
+                    className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200 truncate block">{doc.name}</span>
+                      <span className="text-[9px] text-zinc-400 font-mono mt-0.5 block">{doc.size} • Uploaded: {doc.uploadedAt}</span>
+                    </div>
+                    <button 
+                      onClick={() => triggerToast('Download Started', `Downloading ${doc.name}`, 'info')}
+                      className="p-1 rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-400 transition-colors"
+                    >
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

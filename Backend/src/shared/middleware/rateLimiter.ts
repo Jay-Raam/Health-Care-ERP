@@ -25,13 +25,18 @@ const createRateLimiter = (options: {
     store: new RedisStore({
       // @ts-expect-error - ioredis type mismatch with rate-limit-redis client type definition, but compatible at runtime
       sendCommand: async (...args: string[]) => {
+        const isScriptLoad = args[0]?.toUpperCase() === 'SCRIPT';
         try {
           if (!checkRedisStatus()) {
-            return '0000000000000000000000000000000000000000';
+            return isScriptLoad 
+              ? '0000000000000000000000000000000000000000' 
+              : [1, 60000];
           }
           return await redisClient.call(args[0], ...args.slice(1));
         } catch (err) {
-          return '0000000000000000000000000000000000000000';
+          return isScriptLoad 
+            ? '0000000000000000000000000000000000000000' 
+            : [1, 60000];
         }
       },
       prefix: `rl:${options.prefix}:`

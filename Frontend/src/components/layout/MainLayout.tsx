@@ -88,6 +88,14 @@ export function MainLayout({ children }: MainLayoutProps) {
     { name: 'Admin Logs', icon: <ShieldAlert size={18} /> }
   ];
 
+  const isPatient = currentUser?.role === 'PATIENT';
+  const filteredNavigationItems = navigationItems.filter(item => {
+    if (isPatient) {
+      return ['Dashboard', 'Patients', 'Appointments'].includes(item.name);
+    }
+    return true;
+  });
+
   const handleModuleClick = (tabName: string) => {
     navigate(getTabPath(tabName));
     setIsProfileOpen(false);
@@ -117,7 +125,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     : mockSearchDatabase.slice(0, 4); // Show recent suggestions by default
 
   return (
-    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
+    <div className="h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col font-sans transition-colors duration-200">
       
       {/* 1. Global Search Dialog (Modal) */}
       <AnimatePresence>
@@ -247,7 +255,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </span>
               )}
               <nav className="space-y-0.5">
-                {navigationItems.map((item) => (
+                {filteredNavigationItems.map((item) => (
                   <button
                     key={item.name}
                     onClick={() => handleModuleClick(item.name)}
@@ -522,20 +530,24 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Calendar size={16} />
           <span>Schedules</span>
         </button>
-        <button 
-          onClick={() => handleModuleClick('AI Chat')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'AI Chat' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
-        >
-          <MessageSquare size={16} />
-          <span>AI Chat</span>
-        </button>
-        <button 
-          onClick={() => handleModuleClick('Billing')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Billing' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
-        >
-          <Receipt size={16} />
-          <span>Billing</span>
-        </button>
+        {!isPatient && (
+          <>
+            <button 
+              onClick={() => handleModuleClick('AI Chat')}
+              className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'AI Chat' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
+            >
+              <MessageSquare size={16} />
+              <span>AI Chat</span>
+            </button>
+            <button 
+              onClick={() => handleModuleClick('Billing')}
+              className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Billing' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
+            >
+              <Receipt size={16} />
+              <span>Billing</span>
+            </button>
+          </>
+        )}
       </nav>
     </div>
   );

@@ -9,8 +9,6 @@ let attemptedLocalFallback = false;
 export const initRedis = (): Redis => {
   if (redisClient) return redisClient;
 
-  console.log("config", config)
-
     redisClient = new Redis({
       host: config.REDIS_HOST,
       port: config.REDIS_PORT,

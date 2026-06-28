@@ -19,9 +19,21 @@ const AdminLogs = React.lazy(() => import('../pages/AdminLogs'));
 // Protected route wrapper to redirect unauthorized clients
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAppStore((state) => state.isAuthenticated);
+  const currentUser = useAppStore((state) => state.currentUser);
+
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
+
+  // If role is PATIENT, only allow access to dashboard, patients, and appointments
+  if (currentUser?.role === 'PATIENT') {
+    const allowedPaths = ['/dashboard', '/patients', '/appointments'];
+    const currentPath = window.location.pathname;
+    if (!allowedPaths.includes(currentPath)) {
+      return <Navigate to="/dashboard" replace />;
+    }
+  }
+
   return <>{children}</>;
 }
 

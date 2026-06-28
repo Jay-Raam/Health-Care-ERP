@@ -229,22 +229,14 @@ export default function Auth({ initialScreen = 'login' }: AuthProps) {
               )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3 items-center">
-              <div className="space-y-1.5">
-                <label className="block font-semibold text-zinc-800 dark:text-zinc-200">Session Preference</label>
-                <div className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-3 py-2 text-zinc-500 dark:text-zinc-400">
-                  Credentials are validated against your registered backend account role.
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 self-end h-[38px] cursor-pointer">
-                <input
-                  type="checkbox"
-                  {...register('rememberMe')}
-                  className="rounded border-zinc-300 dark:border-zinc-700 text-zinc-950 cursor-pointer h-3.5 w-3.5"
-                />
-                <span className="text-zinc-500 dark:text-zinc-400">Remember this station</span>
-              </div>
-            </div>
+             <div className="flex items-center gap-1.5 py-1.5 cursor-pointer">
+               <input
+                 type="checkbox"
+                 {...register('rememberMe')}
+                 className="rounded border-zinc-300 dark:border-zinc-700 text-zinc-950 cursor-pointer h-3.5 w-3.5"
+               />
+               <span className="text-zinc-500 dark:text-zinc-400">Remember this station</span>
+             </div>
 
             <button
               type="submit"
