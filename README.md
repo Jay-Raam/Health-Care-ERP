@@ -8,7 +8,7 @@ An enterprise-grade, secure clinical automation and physician assistant platform
 
 ```mermaid
 graph TD
-    Client[React Frontend / Zustand] <-->|GraphQL / withCredentials| Gateway[Express Server / GraphQL Yoga]
+    Client[React Frontend / Zustand] <-->|Vite Dev Server Proxy| Gateway[Express Server / GraphQL Yoga]
     Gateway <-->|Audit Footprints| MongoDB[(MongoDB DB)]
     Gateway <-->|Job Dispatch| Redis[(Redis / BullMQ)]
     Redis <-->|Background Tasks| Worker[Queue Worker / Nodemailer]
@@ -28,9 +28,10 @@ To comply with **HIPAA** and **SOC2 Type II** security requirements, the platfor
    * The short-lived `accessToken` is stored in the frontend's local closure memory (`inMemoryAccessToken`).
    * No access tokens are ever written to `localStorage` or `sessionStorage`, making the client **100% immune to Cross-Site Scripting (XSS)** token theft.
    
-2. **Secure Cross-Origin HTTP-Only Cookies**
+2. **Secure HTTP-Only Cookies via Vite Proxy**
    * The `refreshToken` is set by the backend server in the `Set-Cookie` response headers with `HttpOnly`, `Secure`, and `SameSite=Strict` flags.
    * Browser-side JavaScript cannot read the cookie, neutralizing token extraction exploits.
+   * **Local Development Proxying**: To prevent browser port-mismatch blocks on `localhost` (e.g. frontend on `3000` vs backend on `4000`), a local proxy is configured in Vite. This routes `/graphql` requests through port `3000`, making the cookies same-site and ensuring secure, persistent session restoration on tab reload.
 
 3. **Session Hijacking Fingerprint Validation**
    * The database stores the client's **IP Address** and browser **User-Agent Fingerprint** alongside active session records.
@@ -109,7 +110,7 @@ OPENROUTER_API_KEY=your-openrouter-key-here
 
 #### Frontend (`Frontend/.env`)
 ```ini
-VITE_API_URL=http://localhost:4000/graphql
+VITE_API_URL=/graphql
 ```
 
 ### Installation

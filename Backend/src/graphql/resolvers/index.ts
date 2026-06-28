@@ -53,6 +53,12 @@ export const resolvers = {
   },
 
   Appointment: {
+    appointmentDate: (parent: any) => {
+      if (parent.appointmentDate instanceof Date) {
+        return parent.appointmentDate.toISOString();
+      }
+      return parent.appointmentDate ? new Date(parent.appointmentDate).toISOString() : '';
+    },
     patient: async (parent: any, _args: any, context: any) => {
       if (!parent.patient) return null;
       return context.loaders.patient.load(parent.patient.toString());

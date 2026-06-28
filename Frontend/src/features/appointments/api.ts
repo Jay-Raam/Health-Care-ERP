@@ -50,8 +50,15 @@ const mapGraphQLAppointment = (apt: any): Appointment => {
     : (apt.doctor?.name || 'Unknown Doctor');
 
   let formattedDate = apt.appointmentDate;
-  if (formattedDate.includes('T')) {
-    formattedDate = formattedDate.split('T')[0];
+  try {
+    const d = new Date(formattedDate);
+    if (!isNaN(d.getTime())) {
+      formattedDate = d.toISOString().split('T')[0];
+    }
+  } catch (e) {
+    if (formattedDate.includes('T')) {
+      formattedDate = formattedDate.split('T')[0];
+    }
   }
 
   let type: 'Consultation' | 'Follow-up' | 'Emergency' | 'Operation' | 'Lab Review' = 'Consultation';

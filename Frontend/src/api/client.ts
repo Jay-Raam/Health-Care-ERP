@@ -5,25 +5,15 @@ const COOKIE_REFRESH_PLACEHOLDER = 'cookie-session';
 
 export const setAccessToken = (token: string) => {
   inMemoryAccessToken = token;
-  if (typeof window !== 'undefined') {
-    if (token) {
-      window.localStorage.setItem('app-access-token', token);
-    } else {
-      window.localStorage.removeItem('app-access-token');
-    }
-  }
 };
 
 export const getAccessToken = () => {
-  if (!inMemoryAccessToken && typeof window !== 'undefined') {
-    inMemoryAccessToken = window.localStorage.getItem('app-access-token') || '';
-  }
   return inMemoryAccessToken;
 };
 
 // Create AXIOS instance pointing to the backend's GraphQL endpoint
 export const apiClient = axios.create({
-  baseURL: (import.meta as any).env.VITE_API_URL || 'http://localhost:4000/graphql',
+  baseURL: (import.meta as any).env.VITE_API_URL || '/graphql',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -63,7 +53,7 @@ apiClient.interceptors.response.use(
           }
         `;
         const res = await axios.post(
-          (import.meta as any).env.VITE_API_URL || 'http://localhost:4000/graphql',
+          (import.meta as any).env.VITE_API_URL || '/graphql',
           { query: refreshMutation },
           { withCredentials: true }
         );
@@ -90,10 +80,6 @@ apiClient.interceptors.response.use(
 
 // Function to run on application startup to perform a silent refresh and restore session
 export const bootstrapSession = async (): Promise<boolean> => {
-  const existingToken = getAccessToken();
-  if (existingToken) {
-    return true;
-  }
   try {
     const refreshMutation = `
       mutation {
@@ -106,7 +92,7 @@ export const bootstrapSession = async (): Promise<boolean> => {
       }
     `;
     const res = await axios.post(
-      (import.meta as any).env.VITE_API_URL || 'http://localhost:4000/graphql',
+      (import.meta as any).env.VITE_API_URL || '/graphql',
       { query: refreshMutation },
       { withCredentials: true }
     );
