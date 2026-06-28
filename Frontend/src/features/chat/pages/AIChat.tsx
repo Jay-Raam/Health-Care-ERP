@@ -250,41 +250,43 @@ export default function AIChat() {
         <div className="lg:col-span-3 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 flex flex-col overflow-hidden shadow-2xs">
           
           {/* Agent Selector Ribbon */}
-          <div className="shrink-0 px-4 py-3 border-b border-zinc-150 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/20">
-            <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
-              <span className="text-[10px] text-zinc-400 uppercase font-semibold">Active Agent:</span>
-              <div className="flex items-center gap-1">
-                {(['planner', 'doctor', 'billing', 'lab', 'appointment'] as const).map((agent) => (
-                  <button
-                    key={agent}
-                    onClick={() => {
-                      setCurrentAgent(agent);
-                      triggerToast('Agent Mobilized', `Active focus: ${agent.toUpperCase()} agent.`, 'info');
-                    }}
-                    className={`px-2 py-1 rounded capitalize text-[10px] font-bold tracking-tight transition-all ${
-                      currentAgent === agent 
-                        ? 'bg-purple-600 text-white font-extrabold shadow-2xs' 
-                        : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
-                    }`}
-                  >
-                    {agent}
-                  </button>
-                ))}
+          {currentUser?.role === 'PATIENT' && (
+            <div className="shrink-0 px-4 py-3 border-b border-zinc-150 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 bg-zinc-50/50 dark:bg-zinc-900/20">
+              <div className="flex flex-wrap items-center gap-1.5 text-xs font-mono">
+                <span className="text-[10px] text-zinc-400 uppercase font-semibold">Active Agent:</span>
+                <div className="flex items-center gap-1">
+                  {(['planner', 'doctor', 'appointment'] as const).map((agent) => (
+                    <button
+                      key={agent}
+                      onClick={() => {
+                        setCurrentAgent(agent);
+                        triggerToast('Agent Mobilized', `Active focus: ${agent.toUpperCase()} agent.`, 'info');
+                      }}
+                      className={`px-2 py-1 rounded capitalize text-[10px] font-bold tracking-tight transition-all ${
+                        currentAgent === agent 
+                          ? 'bg-purple-600 text-white font-extrabold shadow-2xs' 
+                          : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      {agent}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Glowing active indicator */}
+              <div className="flex items-center gap-2">
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono font-bold rounded-sm border ${
+                  agentStatus === 'working' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
+                  agentStatus === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
+                  'bg-zinc-100 text-zinc-500 dark:bg-zinc-850 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-800'
+                }`}>
+                  <span className={`h-1.5 w-1.5 rounded-full bg-current ${agentStatus === 'working' ? 'animate-pulse' : ''}`} />
+                  {agentStatus === 'working' ? 'AGENT WORKING' : agentStatus === 'completed' ? 'WORK COMPLETED' : 'AGENT IDLE'}
+                </span>
               </div>
             </div>
-
-            {/* Glowing active indicator */}
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[9px] font-mono font-bold rounded-sm border ${
-                agentStatus === 'working' ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' :
-                agentStatus === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' :
-                'bg-zinc-100 text-zinc-500 dark:bg-zinc-850 dark:text-zinc-400 border-zinc-200/50 dark:border-zinc-800'
-              }`}>
-                <span className={`h-1.5 w-1.5 rounded-full bg-current ${agentStatus === 'working' ? 'animate-pulse' : ''}`} />
-                {agentStatus === 'working' ? 'AGENT WORKING' : agentStatus === 'completed' ? 'WORK COMPLETED' : 'AGENT IDLE'}
-              </span>
-            </div>
-          </div>
+          )}
 
           {/* Messages stream viewport */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 bg-zinc-50/20 dark:bg-zinc-950/20">

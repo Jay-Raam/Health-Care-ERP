@@ -30,6 +30,7 @@ interface AppState {
   addPatient: (patient: Omit<Patient, 'id'>) => void;
   updatePatient: (id: string, updated: Partial<Patient>) => void;
   deletePatient: (id: string) => void;
+  approvePatient: (id: string) => void;
 
   // Appointments Module
   appointments: Appointment[];
@@ -302,7 +303,8 @@ export const useAppStore = create<AppState>((set) => {
       const newPat: Patient = {
         ...patient,
         id: `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
-        documents: []
+        documents: [],
+        approved: false
       };
       return { patients: [newPat, ...state.patients] };
     }),
@@ -311,6 +313,9 @@ export const useAppStore = create<AppState>((set) => {
     })),
     deletePatient: (id) => set((state) => ({
       patients: state.patients.filter(p => p.id !== id)
+    })),
+    approvePatient: (id) => set((state) => ({
+      patients: state.patients.map(p => p.id === id ? { ...p, approved: true } : p)
     })),
 
     // Appointments CRUD

@@ -20,6 +20,7 @@ export interface Patient {
   bloodType: string;
   address: string;
   allergies: string[];
+  approved?: boolean;
   medicalHistory: {
     condition: string;
     diagnosedDate: string;

@@ -132,7 +132,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isPatient = currentUser?.role === 'PATIENT';
   const filteredNavigationItems = navigationItems.filter(item => {
     if (isPatient) {
-      return ['Dashboard', 'Patients', 'Appointments', 'AI Chat'].includes(item.name);
+      return ['Dashboard', 'Appointments', 'AI Chat'].includes(item.name);
     }
     return true;
   });
@@ -357,11 +357,11 @@ export function MainLayout({ children }: MainLayoutProps) {
               {/* Global search trigger bar */}
               <button
                 onClick={() => setIsSearchOpen(true)}
-                className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 w-48 lg:w-64 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 text-left text-xs text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
+                className="flex items-center gap-2.5 p-2 sm:px-3 sm:py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 text-left text-xs text-zinc-400 hover:text-zinc-500 dark:hover:text-zinc-300 transition-colors"
               >
                 <Search size={14} />
-                <span>Search clinical records...</span>
-                <span className="ml-auto text-[9px] font-mono text-zinc-400 border border-zinc-200 dark:border-zinc-800 px-1 rounded-sm">
+                <span className="hidden sm:inline">Search clinical records...</span>
+                <span className="hidden lg:inline ml-auto text-[9px] font-mono text-zinc-400 border border-zinc-200 dark:border-zinc-800 px-1 rounded-sm">
                   ⌘K
                 </span>
               </button>
