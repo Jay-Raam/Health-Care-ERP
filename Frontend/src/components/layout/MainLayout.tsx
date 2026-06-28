@@ -557,13 +557,15 @@ export function MainLayout({ children }: MainLayoutProps) {
           <LayoutDashboard size={16} />
           <span>Home</span>
         </button>
-        <button 
-          onClick={() => handleModuleClick('Patients')}
-          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Patients' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
-        >
-          <Users size={16} />
-          <span>Patients</span>
-        </button>
+        {!isPatient && (
+          <button 
+            onClick={() => handleModuleClick('Patients')}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Patients' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
+          >
+            <Users size={16} />
+            <span>Patients</span>
+          </button>
+        )}
         <button 
           onClick={() => handleModuleClick('Appointments')}
           className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Appointments' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}

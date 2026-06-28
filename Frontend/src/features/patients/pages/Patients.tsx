@@ -14,6 +14,8 @@ export default function Patients() {
   const addPatient = useAppStore((state) => state.addPatient);
   const updatePatient = useAppStore((state) => state.updatePatient);
   const deletePatient = useAppStore((state) => state.deletePatient);
+  const approvePatient = useAppStore((state) => state.approvePatient);
+  const currentUser = useAppStore((state) => state.currentUser);
   const pins = useAppStore((state) => state.pins);
   const togglePin = useAppStore((state) => state.togglePin);
 
@@ -181,13 +183,15 @@ export default function Patients() {
         onTogglePin={() => togglePin('Patients')}
         breadcrumbs={[{ label: 'Directory' }, { label: 'Registered Patients', active: true }]}
         actions={
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90"
-          >
-            <Plus size={14} />
-            Add Patient
-          </button>
+          (currentUser?.role === 'NURSE' || currentUser?.role === 'RECEPTIONIST') ? (
+            <button
+              onClick={() => setIsCreateOpen(true)}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 hover:opacity-90"
+            >
+              <Plus size={14} />
+              Add Patient
+            </button>
+          ) : undefined
         }
       />
 
@@ -231,6 +235,7 @@ export default function Patients() {
                     <th className="p-4 font-semibold">Sex</th>
                     <th className="p-4 font-semibold">DOB</th>
                     <th className="p-4 font-semibold">Allergies</th>
+                    <th className="p-4 font-semibold">Status</th>
                     <th className="p-4 text-right font-semibold">Actions</th>
                   </tr>
                 </thead>
@@ -278,8 +283,26 @@ export default function Patients() {
                           {p.allergies.length === 0 && <span className="text-zinc-400 italic">None</span>}
                         </div>
                       </td>
+                      <td className="p-4">
+                        <StatusBadge 
+                          status={p.approved ? 'APPROVED' : 'PENDING'} 
+                          type={p.approved ? 'success' : 'warning'} 
+                        />
+                      </td>
                       <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-1.5">
+                          {!p.approved && (currentUser?.role === 'DOCTOR' || currentUser?.role === 'ADMIN') && (
+                            <button 
+                              onClick={() => {
+                                approvePatient(p.id);
+                                triggerToast('Patient Approved', `${p.name} profile has been approved.`, 'success');
+                              }}
+                               title="Approve patient record"
+                              className="p-1.5 text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-500/10 rounded-md"
+                            >
+                              <Check size={13} />
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleEditClick(p)}
                             title="Edit patient registry profile"
@@ -355,7 +378,10 @@ export default function Patients() {
                       <span className="text-[10px] font-mono text-zinc-400">{selectedPatient.id} • blood {selectedPatient.bloodType}</span>
                     </div>
                   </div>
-                  <StatusBadge status="ACTIVE" type="success" />
+                  <StatusBadge 
+                    status={selectedPatient.approved ? 'APPROVED' : 'PENDING'} 
+                    type={selectedPatient.approved ? 'success' : 'warning'} 
+                  />
                 </div>
 
                 {/* Vitals summary */}
@@ -373,6 +399,19 @@ export default function Patients() {
                     <span className="text-zinc-700 dark:text-zinc-300 block leading-tight font-sans mt-0.5">{selectedPatient.address}</span>
                   </div>
                 </div>
+
+                {/* Proactive Doctor/Admin approval action */}
+                {!selectedPatient.approved && (currentUser?.role === 'DOCTOR' || currentUser?.role === 'ADMIN') && (
+                  <button
+                    onClick={() => {
+                      approvePatient(selectedPatient.id);
+                      triggerToast('Patient Approved', `${selectedPatient.name} profile approved.`, 'success');
+                    }}
+                    className="w-full py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold text-xs transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Check size={14} /> Approve Patient Record
+                  </button>
+                )}
               </div>
 
               {/* Allergy flags */}
