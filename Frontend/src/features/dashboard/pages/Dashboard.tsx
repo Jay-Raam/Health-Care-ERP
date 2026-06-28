@@ -290,6 +290,363 @@ export default function Dashboard() {
     );
   }
 
+  if (currentUser?.role === 'DOCTOR') {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        {/* Header Greeting */}
+        <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-gradient-to-r from-blue-500/10 via-indigo-500/5 to-transparent p-6 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+                Welcome back, {currentUser?.name || 'Doctor'}!
+              </h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Your assigned patients, schedule summary, and active clinical check-ins.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+              Physician Clearance active
+            </span>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard 
+            title="Today's Appointments"
+            value="4 Active"
+            subtext="2 pending consults"
+            icon={<Calendar size={16} />}
+            onClick={() => navigate('/appointments')}
+            accent="from-blue-500 to-indigo-500"
+          />
+          <StatCard 
+            title="Assigned Patients"
+            value="12 Records"
+            subtext="All profiles fully authorized"
+            icon={<Users size={16} />}
+            onClick={() => navigate('/patients')}
+            accent="from-emerald-500 to-teal-500"
+          />
+          <StatCard 
+            title="Leave & Attendance"
+            value="96% Rate"
+            subtext="Accrued: 4.5 days leave"
+            trend={{ value: 'Good', isPositive: true }}
+            icon={<CheckSquare size={16} />}
+            onClick={() => {}}
+            accent="from-amber-500 to-yellow-500"
+          />
+          <StatCard 
+            title="Consultation Earnings"
+            value="$18,500.00"
+            subtext="Current calendar month basic"
+            icon={<Receipt size={16} />}
+            onClick={() => {}}
+            accent="from-purple-500 to-pink-500"
+          />
+        </div>
+
+        {/* Workspace Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Pinned/Assigned Patient Records */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                My Pinned Patients Directory
+              </h3>
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {patients.slice(0, 3).map((item, idx) => (
+                  <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4 text-xs">
+                    <div>
+                      <span className="font-semibold text-zinc-900 dark:text-white block">{item.name}</span>
+                      <span className="text-[10px] text-zinc-400 font-mono mt-0.5 block">{item.id} • {item.gender} • DOB: {item.dob}</span>
+                    </div>
+                    <button 
+                      onClick={() => navigate('/patients')}
+                      className="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-white flex items-center gap-1"
+                    >
+                      <Eye size={12} /> View Profile
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Active Consultations */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Pending Clinical Consultations
+              </h3>
+              <div className="space-y-3">
+                {appointments.slice(0, 2).map((item, idx) => (
+                  <div key={idx} className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                    <div>
+                      <div className="font-semibold text-zinc-900 dark:text-white">{item.patientName} ({item.id})</div>
+                      <p className="text-zinc-500 mt-1">{item.notes}</p>
+                    </div>
+                    <div className="shrink-0 flex items-center gap-2">
+                      <span className="font-mono text-zinc-400 text-[10px]">{item.date} @ {item.time}</span>
+                      <StatusBadge status="warning" text="Pending" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div className="space-y-6">
+            <TodoWidget 
+              todos={todos}
+              onToggleTodo={handleToggleTodo}
+              onAddTodo={handleAddTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+            <StickyNoteWidget 
+              notes={stickyNotes}
+              onAddNote={handleAddNote}
+              onDeleteNote={handleDeleteNote}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser?.role === 'NURSE') {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        {/* Header Greeting */}
+        <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-gradient-to-r from-purple-500/10 via-pink-500/5 to-transparent p-6 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+                Welcome back, {currentUser?.name || 'Nurse'}!
+              </h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Your daily nursing tasks, ward patients, and medication charts.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-purple-500" />
+              Ward Care Team
+            </span>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard 
+            title="Assigned Patients"
+            value="8 Ward Records"
+            subtext="Primary medical updates pending"
+            icon={<Users size={16} />}
+            onClick={() => navigate('/patients')}
+            accent="from-blue-500 to-indigo-500"
+          />
+          <StatCard 
+            title="Medication Cycles"
+            value="6 Doses Pending"
+            subtext="Next cycle starts at 10 AM"
+            icon={<HeartPulse size={16} />}
+            onClick={() => {}}
+            accent="from-emerald-500 to-teal-500"
+          />
+          <StatCard 
+            title="Leave & Attendance"
+            value="98% Rate"
+            subtext="Accrued: 5 days leave"
+            trend={{ value: 'Excellent', isPositive: true }}
+            icon={<CheckSquare size={16} />}
+            onClick={() => {}}
+            accent="from-amber-500 to-yellow-500"
+          />
+          <StatCard 
+            title="Monthly Net Salary"
+            value="$8,200.00"
+            subtext="Accrued base including shift incentives"
+            icon={<Receipt size={16} />}
+            onClick={() => {}}
+            accent="from-purple-500 to-pink-500"
+          />
+        </div>
+
+        {/* Workspace Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Medication Chart */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Scheduled Medication & Care Cycles
+              </h3>
+              <div className="space-y-3">
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex justify-between gap-3 text-xs items-center">
+                  <div>
+                    <span className="font-semibold text-zinc-900 dark:text-white block">Alexander Sterling (Lisinopril 10mg)</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5 block">09:00 AM Daily Dose Dosage cycle</span>
+                  </div>
+                  <StatusBadge status="warning" text="Pending" />
+                </div>
+                <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900 flex justify-between gap-3 text-xs items-center">
+                  <div>
+                    <span className="font-semibold text-zinc-900 dark:text-white block">Evelyn Montgomery (Inhaler check)</span>
+                    <span className="text-[10px] text-zinc-400 mt-0.5 block">02:00 PM Post-therapy assessment</span>
+                  </div>
+                  <StatusBadge status="success" text="Confirmed" />
+                </div>
+              </div>
+            </div>
+
+            {/* Department Updates */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-3 text-xs text-zinc-500">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Emergency Ward Status & Staff Notifications
+              </h3>
+              <div className="p-3 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 space-y-1">
+                <span className="font-semibold text-zinc-800 dark:text-zinc-200 block">General Hospital Alert</span>
+                <p>Emergency wing is currently at 90% capacity. Please prioritize checking vitals logs for newly assigned patients.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <TodoWidget 
+              todos={todos}
+              onToggleTodo={handleToggleTodo}
+              onAddTodo={handleAddTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+            <StickyNoteWidget 
+              notes={stickyNotes}
+              onAddNote={handleAddNote}
+              onDeleteNote={handleDeleteNote}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (currentUser?.role === 'RECEPTIONIST') {
+    return (
+      <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+        {/* Header Greeting */}
+        <div className="rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent p-6 relative overflow-hidden">
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-950 dark:text-white">
+                Welcome back, {currentUser?.name || 'Receptionist'}!
+              </h1>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                Manage appointment check-ins, register new patients, and coordinate billing queues.
+              </p>
+            </div>
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-500 border border-zinc-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 rounded-lg shadow-2xs">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Front Desk active
+            </span>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard 
+            title="Scheduled Appointments"
+            value="18 Active"
+            subtext="4 check-ins completed"
+            icon={<Calendar size={16} />}
+            onClick={() => navigate('/appointments')}
+            accent="from-blue-500 to-indigo-500"
+          />
+          <StatCard 
+            title="New Patient Registrations"
+            value="3 Profiles"
+            subtext="Today's desk updates"
+            icon={<Users size={16} />}
+            onClick={() => navigate('/patients')}
+            accent="from-emerald-500 to-teal-500"
+          />
+          <StatCard 
+            title="My Leave & Attendance"
+            value="95% Rate"
+            subtext="Accrued: 3 days leave"
+            trend={{ value: 'Good', isPositive: true }}
+            icon={<CheckSquare size={16} />}
+            onClick={() => {}}
+            accent="from-amber-500 to-yellow-500"
+          />
+          <StatCard 
+            title="Monthly Base Salary"
+            value="$4,500.00"
+            subtext="Accrued base compensation"
+            icon={<Receipt size={16} />}
+            onClick={() => {}}
+            accent="from-purple-500 to-pink-500"
+          />
+        </div>
+
+        {/* Workspace Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            {/* Daily Appointments Checklist */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-4">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                Active Appointment Schedules & check-ins
+              </h3>
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
+                {appointments.slice(0, 3).map((item, idx) => (
+                  <div key={idx} className="py-3 first:pt-0 last:pb-0 flex items-center justify-between gap-4 text-xs">
+                    <div>
+                      <span className="font-semibold text-zinc-900 dark:text-white block">{item.patientName}</span>
+                      <span className="text-[10px] text-zinc-400 mt-0.5 block">{item.type} with {item.doctorName}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-zinc-400 text-[10px]">{item.date} @ {item.time}</span>
+                      <StatusBadge status={item.status === 'Upcoming' ? 'success' : 'warning'} text={item.status} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Profile & Personal Info Menu */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-5 space-y-3 text-xs">
+              <h3 className="text-xs font-mono font-medium text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">
+                My Profile & Account Preferences
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+                <div>
+                  <span className="text-zinc-400 block">Staff Name:</span>
+                  <span className="font-semibold text-zinc-900 dark:text-white">{currentUser?.name || 'Receptionist'}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 block">Primary Email:</span>
+                  <span className="font-semibold text-zinc-900 dark:text-white">{currentUser?.email || 'frontdesk@hospitalagent.ai'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <TodoWidget 
+              todos={todos}
+              onToggleTodo={handleToggleTodo}
+              onAddTodo={handleAddTodo}
+              onDeleteTodo={handleDeleteTodo}
+            />
+            <StickyNoteWidget 
+              notes={stickyNotes}
+              onAddNote={handleAddNote}
+              onDeleteNote={handleDeleteNote}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       

@@ -60,6 +60,47 @@ export function MainLayout({ children }: MainLayoutProps) {
   const { theme, toggleTheme } = useTheme();
   const { notifications, unreadCount, markAsRead, markAllAsRead, clear } = useNotification();
 
+  // Storage Modification Tamper Detection Security Guard
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'app-auth-user') {
+        logout();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    // Active validation check every 1.5 seconds
+    const interval = setInterval(() => {
+      const saved = localStorage.getItem('app-auth-user');
+      if (currentUser) {
+        if (!saved) {
+          logout();
+        } else {
+          try {
+            const parsed = JSON.parse(saved);
+            if (
+              parsed.id !== currentUser.id || 
+              parsed.role !== currentUser.role || 
+              parsed.email !== currentUser.email
+            ) {
+              logout();
+            }
+          } catch {
+            logout();
+          }
+        }
+      } else if (saved) {
+        logout();
+      }
+    }, 1500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [currentUser, logout]);
+
   // Search Dialog States
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,7 +132,7 @@ export function MainLayout({ children }: MainLayoutProps) {
   const isPatient = currentUser?.role === 'PATIENT';
   const filteredNavigationItems = navigationItems.filter(item => {
     if (isPatient) {
-      return ['Dashboard', 'Patients', 'Appointments'].includes(item.name);
+      return ['Dashboard', 'Patients', 'Appointments', 'AI Chat'].includes(item.name);
     }
     return true;
   });
@@ -530,23 +571,21 @@ export function MainLayout({ children }: MainLayoutProps) {
           <Calendar size={16} />
           <span>Schedules</span>
         </button>
+        <button 
+          onClick={() => handleModuleClick('AI Chat')}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'AI Chat' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
+        >
+          <MessageSquare size={16} />
+          <span>AI Chat</span>
+        </button>
         {!isPatient && (
-          <>
-            <button 
-              onClick={() => handleModuleClick('AI Chat')}
-              className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'AI Chat' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
-            >
-              <MessageSquare size={16} />
-              <span>AI Chat</span>
-            </button>
-            <button 
-              onClick={() => handleModuleClick('Billing')}
-              className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Billing' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
-            >
-              <Receipt size={16} />
-              <span>Billing</span>
-            </button>
-          </>
+          <button 
+            onClick={() => handleModuleClick('Billing')}
+            className={`flex flex-col items-center gap-0.5 text-[10px] font-medium transition-all ${activeTab === 'Billing' ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`}
+          >
+            <Receipt size={16} />
+            <span>Billing</span>
+          </button>
         )}
       </nav>
     </div>

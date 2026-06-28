@@ -16,6 +16,7 @@ export default function AIChat() {
   const togglePinChat = useAppStore((state) => state.togglePinChat);
   const addMessageToSession = useAppStore((state) => state.addMessageToSession);
   const updateLastMessageStatus = useAppStore((state) => state.updateLastMessageStatus);
+  const currentUser = useAppStore((state) => state.currentUser);
 
   const { triggerToast } = useNotification();
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -51,33 +52,95 @@ export default function AIChat() {
       content: userText
     });
 
+    const role = currentUser?.role || 'PATIENT';
+    const userName = currentUser?.name || 'User';
+
     // 2. Trigger active agent diagnostics loop
     setAgentStatus('working');
     addMessageToSession(activeSession.id, {
       sender: 'assistant',
-      content: `Let me consult with my specialized clinical sub-agents to process your query...`,
+      content: `Verifying authorization credentials for role: ${role}...`,
       agent: currentAgent,
       status: 'working'
     });
 
-    // 3. Simulates streaming response
+    // 3. Simulates streaming response with role-based checks
     setTimeout(() => {
       let responseContent = '';
-      if (currentAgent === 'planner') {
-        responseContent = `### 📋 Integrated Clinical Plan Resolved\n\nI have mobilized the sub-agents to evaluate your prompt: **"${userText}"**.\n\n* **Diagnostics (Lab Agent)**: Scanned laboratory database logs. Hematology parameters indicate stable electrolytes.\n* **Calendar (Appointment Agent)**: Dr. Connor has open follow-up blocks on Monday morning.\n* **Billing (Billing Agent)**: Verified active invoices. No pending balances outstanding.`;
-      } else if (currentAgent === 'doctor') {
-        responseContent = `### 🩺 Physician Diagnosis Summary\n\nBased on your query, I have cross-referenced clinical trials and active patient biometrics:\n\n* **Hematology assessment**: Iron-deficiency anemia remains the primary focus. Suggest oral iron supplementation (e.g. Iron Sulfate 325mg daily).\n* **Cardiac trends**: Resting EKG remains within standard parameters. Normal sinus rhythm recorded.`;
-      } else if (currentAgent === 'billing') {
-        responseContent = `### 💳 Billing & GST Audit Report\n\nInvoice checks completed successfully:\n\n* **GST Compliance**: Standard 18% CGST + SGST applied on specialist diagnostic charges.\n* **Claim Audit**: Private corporate insurance cover recognized. Co-pay liability fully resolved.`;
-      } else if (currentAgent === 'lab') {
-        responseContent = `### 🧬 Laboratory Biomarker Diagnostics\n\nBiochemical laboratory indices completed:\n\n* **Hemoglobin**: Reported Marginally Low (11.4 g/dL).\n* **Ferritin (Iron Reserve)**: Critical Low (12 ng/mL).\n* **Clinical Guideline**: Urgently register a follow-up assessment with Hematologist Dr. Helen Cho.`;
-      } else if (currentAgent === 'appointment') {
-        responseContent = `### 📅 Scheduler Optimizer Resolved\n\nPredicted clinical schedule recommendations:\n\n* **Optimal slot**: Monday, June 29th at 10:00 AM.\n* **Assigned Clinician**: Dr. Helen Cho (Diagnostics Chief).\n* **Slot Availability**: Confirmed 100% Open. Quick button ready to schedule.`;
+      const lowercaseText = userText.toLowerCase();
+
+      if (role === 'PATIENT') {
+        // Patients cannot query other patients' details
+        const patientNames = ['alexander', 'sterling', 'evelyn', 'montgomery', 'marcus', 'vance'];
+        const matchesOtherPatient = patientNames.some(name => lowercaseText.includes(name)) && 
+                                    !lowercaseText.includes(userName.toLowerCase().split(' ')[0]);
+
+        if (matchesOtherPatient || lowercaseText.includes('other patient') || lowercaseText.includes('all patients')) {
+          responseContent = `⛔ **Access Denied (Role: PATIENT)**\n\nAuthorization check failed for **${userName}**.\n\nAs a patient, you are strictly authorized to view only your own medical record, appointments, and prescriptions. Querying or accessing another patient's confidential health data is prohibited.`;
+        } else {
+          // Respond with personalized patient data
+          if (currentAgent === 'planner') {
+            responseContent = `### 📋 Personalized Care Plan (Patient: ${userName})\n\nHello **${userName}**, I have retrieved your patient records:\n\n* **Your Vitals**: Blood Pressure is optimal at 118/76 mmHg. Heart rate is stable at 72 bpm.\n* **Next Slot**: You have a consultation checkup scheduled for Monday, June 29th at 10:00 AM.\n* **Billing**: Your outstanding balances are fully cleared ($0.00).`;
+          } else if (currentAgent === 'doctor') {
+            responseContent = `### 🩺 Patient Health Advisory\n\nDear **${userName}**, here is the summary from your care network:\n\n* **Daily Guideline**: Stay hydrated and maintain your standard dietary guidelines.\n* **Prescriptions**: Keep taking your prescribed vitamins. Follow up if you experience any symptoms.`;
+          } else if (currentAgent === 'billing') {
+            responseContent = `### 💳 My Invoices & Claims\n\n* **Account Status**: Paid in full.\n* **Recent Charges**: $0.00 outstanding. Your health insurance co-pay covers active services.`;
+          } else if (currentAgent === 'lab') {
+            responseContent = `### 🧬 My Lab Reports\n\n* **Latest Upload**: Welcome Information Packet and clinical guidance guidelines. All active vitals report normal metabolic parameters.`;
+          } else if (currentAgent === 'appointment') {
+            responseContent = `### 📅 My Schedule Planner\n\n* **Upcoming Slot**: Monday, June 29th at 10:00 AM.\n* **Doctor**: Dr. Sarah Connor. Please check-in 10 minutes prior to your slot.`;
+          }
+        }
+      } else if (role === 'RECEPTIONIST') {
+        // Receptionists cannot view clinical/medical history or diagnostics
+        const clinicalKeywords = ['diagnos', 'medical history', 'blood work', 'anemia', 'ferritin', 'hemoglobin', 'prescription', 'disease', 'condition'];
+        const queriesClinical = clinicalKeywords.some(kw => lowercaseText.includes(kw));
+
+        if (queriesClinical || currentAgent === 'doctor' || currentAgent === 'lab') {
+          responseContent = `⛔ **Access Denied (Role: RECEPTIONIST)**\n\nAuthorization check failed for **${userName}**.\n\nAs a receptionist, you are authorized to manage appointment schedules, check-ins, and basic patient registrations. You do not have permissions to access confidential clinical medical records, prescriptions, or laboratory diagnostic details.`;
+        } else {
+          // Respond to scheduling / billing queries
+          if (currentAgent === 'planner') {
+            responseContent = `### 📋 Front-Desk Operations Summary\n\nActive check-ins and appointments are running on schedule:\n\n* **Appointments**: 4 active consultations today.\n* **Billing**: Verified active transactions. Daily invoices logged successfully.`;
+          } else if (currentAgent === 'billing') {
+            responseContent = `### 💳 Front-Desk Invoicing & Payments\n\n* **Daily Invoices**: 8 active invoices generated.\n* **Status**: 6 settled, 2 pending co-pay verification.`;
+          } else if (currentAgent === 'appointment') {
+            responseContent = `### 📅 Appointments Registry\n\n* **Next Slot**: Alexander Sterling scheduled with Dr. Connor at 09:00 AM.\n* **Availability**: 3 open slots remaining for afternoon walk-ins.`;
+          }
+        }
+      } else if (role === 'NURSE') {
+        // Nurses can access patient info based on assigned departments, but cannot view billing
+        if (currentAgent === 'billing') {
+          responseContent = `⛔ **Access Denied (Role: NURSE)**\n\nAuthorization check failed for **${userName}**.\n\nAs a nurse, you do not have permission to view or manage financial transactions, billing records, or GST billing configurations. Please contact the Billing Admin.`;
+        } else {
+          if (currentAgent === 'planner') {
+            responseContent = `### 📋 Ward Care Plan (Nurse: ${userName})\n\nOrchestrating active care schedules for your assigned ward:\n\n* **Checklist**: 3 tasks pending (Evelyn Montgomery's ferritin review, ECG authorization check).\n* **Medication**: Confirm scheduled dosage tracking for ward patients.`;
+          } else if (currentAgent === 'doctor') {
+            responseContent = `### 🩺 Nurse Clinical Assisting\n\n* **Patient Vitals**: Recorded blood pressure and temperature logs for ward patients.\n* **Guideline**: Ensure IV refills and vitals charting are synchronized on schedule.`;
+          } else if (currentAgent === 'lab') {
+            responseContent = `### 🧬 Lab Reports Review\n\n* **Alerts**: Low Ferritin (12 ng/mL) flagged for Evelyn Montgomery. Ensure physician review is scheduled.`;
+          } else if (currentAgent === 'appointment') {
+            responseContent = `### 📅 Shift Schedules\n\n* **Upcoming Slots**: 2 patient consultations and 1 blood panel review scheduled during this shift.`;
+          }
+        }
+      } else {
+        // DOCTOR and ADMIN roles have full access to everything
+        if (currentAgent === 'planner') {
+          responseContent = `### 📋 Executive Clinical Operations (Role: ${role})\n\nFull administrative clearance granted for **${userName}**:\n\n* **Diagnostics**: Cross-referencing all database entries.\n* **Hospital Analytics**: Active operations normal. 3,801 patients, 24 lab scans, $11,200 revenue.`;
+        } else if (currentAgent === 'doctor') {
+          responseContent = `### 🩺 Physician Clinical Diagnostics\n\n* **Alexander Sterling**: Managed with Lisinopril 10mg daily for Hypertension. EKG normal.\n* **Evelyn Montgomery**: Mild Asthma, ferritin low (12 ng/mL). Iron supplements recommended.`;
+        } else if (currentAgent === 'billing') {
+          responseContent = `### 💳 Financial Ledger & Invoicing\n\n* **Revenue**: $11,200 collected. GST configuration at 18% is active and verified.\n* **Ledger**: Full ledger download available under Billing.`;
+        } else if (currentAgent === 'lab') {
+          responseContent = `### 🧬 Global Laboratory Register\n\n* **Anomalies**: Critical ferritin low flagged for PAT-4212. All other lab panels normal.`;
+        } else if (currentAgent === 'appointment') {
+          responseContent = `### 📅 Master Clinic Calendar\n\n* **Registry**: 4 active, 1 pending review. Doctors Choice blocks mapped for optimal patient routing.`;
+        }
       }
 
       updateLastMessageStatus(activeSession.id, 'completed', responseContent);
       setAgentStatus('completed');
-      triggerToast('AI Agent Responded', 'Multi-agent diagnostics plan synchronized successfully.', 'success');
+      triggerToast('AI Agent Responded', `Access authorized for role: ${role}.`, 'success');
     }, 1500);
   };
 

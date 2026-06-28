@@ -25,9 +25,9 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <Navigate to="/login" replace />;
   }
 
-  // If role is PATIENT, only allow access to dashboard, patients, and appointments
+  // If role is PATIENT, only allow access to dashboard, patients, appointments, and AI chat
   if (currentUser?.role === 'PATIENT') {
-    const allowedPaths = ['/dashboard', '/patients', '/appointments'];
+    const allowedPaths = ['/dashboard', '/patients', '/appointments', '/ai-chat'];
     const currentPath = window.location.pathname;
     if (!allowedPaths.includes(currentPath)) {
       return <Navigate to="/dashboard" replace />;

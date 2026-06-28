@@ -179,275 +179,32 @@ const initialDoctors: Doctor[] = [
   }
 ];
 
-const initialPatients: Patient[] = [
-  {
-    id: 'PAT-8801',
-    name: 'Alexander Sterling',
-    email: 'alexander.sterling@gmail.com',
-    phone: '+1 (555) 123-4567',
-    dob: '1984-04-12',
-    gender: 'Male',
-    bloodType: 'A+',
-    address: '1024 Emerald Bay Drive, San Francisco, CA',
-    allergies: ['Penicillin', 'Peanuts'],
-    medicalHistory: [
-      { condition: 'Hypertension', diagnosedDate: '2021-02-18', status: 'Active', notes: 'Managed with Lisinopril 10mg daily' },
-      { condition: 'Acute Appendicitis', diagnosedDate: '2018-09-05', status: 'Resolved', notes: 'Appendectomy completed without complications' }
-    ],
-    documents: [
-      { id: 'DOCX-01', name: 'EKG_Report_Feb2026.pdf', type: 'PDF', uploadedAt: '2026-02-15 10:30 AM', size: '2.4 MB' },
-      { id: 'DOCX-02', name: 'Chest_XRay_Digital.png', type: 'Image', uploadedAt: '2025-11-04 03:12 PM', size: '14.2 MB' }
-    ]
-  },
-  {
-    id: 'PAT-4212',
-    name: 'Evelyn Montgomery',
-    email: 'evelyn.mont@yahoo.com',
-    phone: '+1 (555) 987-6543',
-    dob: '1992-08-27',
-    gender: 'Female',
-    bloodType: 'O-',
-    address: '445 Oakwood Ridge Apt 3B, Boston, MA',
-    allergies: ['Sulfa Drugs', 'Bees'],
-    medicalHistory: [
-      { condition: 'Mild Asthma', diagnosedDate: '2023-05-12', status: 'Active', notes: 'Albuterol inhaler prescribed for physical exertion' }
-    ],
-    documents: [
-      { id: 'DOCX-03', name: 'BloodPanel_Complete_June2026.pdf', type: 'PDF', uploadedAt: '2026-06-20 09:15 AM', size: '1.8 MB' }
-    ]
-  },
-  {
-    id: 'PAT-3011',
-    name: 'Marcus Vance',
-    email: 'marcus.vance@outlook.com',
-    phone: '+1 (555) 456-7890',
-    dob: '1970-11-30',
-    gender: 'Male',
-    bloodType: 'B+',
-    address: '89 Beacon Street, Seattle, WA',
-    allergies: ['None'],
-    medicalHistory: [
-      { condition: 'Type 2 Diabetes', diagnosedDate: '2020-10-14', status: 'Active', notes: 'Dietary management + Metformin 500mg twice daily' }
-    ],
-    documents: [
-      { id: 'DOCX-04', name: 'HbA1c_TrendLine.pdf', type: 'PDF', uploadedAt: '2026-05-18 11:00 AM', size: '820 KB' }
-    ]
-  }
-];
+const initialPatients: Patient[] = [];
 
-const initialAppointments: Appointment[] = [
-  {
-    id: 'APT-1001',
-    patientId: 'PAT-8801',
-    patientName: 'Alexander Sterling',
-    doctorId: 'DOC-101',
-    doctorName: 'Dr. Sarah Connor',
-    date: '2026-06-27',
-    time: '09:00 AM',
-    type: 'Consultation',
-    status: 'Upcoming',
-    notes: 'Routine cardiovascular fitness checkup. Check EKG trends.'
-  },
-  {
-    id: 'APT-1002',
-    patientId: 'PAT-4212',
-    patientName: 'Evelyn Montgomery',
-    doctorId: 'DOC-103',
-    doctorName: 'Dr. Helen Cho',
-    date: '2026-06-27',
-    time: '02:00 PM',
-    type: 'Lab Review',
-    status: 'Pending',
-    notes: 'Review complete blood count parameters and iron profile results.'
-  },
-  {
-    id: 'APT-1003',
-    patientId: 'PAT-3011',
-    patientName: 'Marcus Vance',
-    doctorId: 'DOC-102',
-    doctorName: 'Dr. David Marcus',
-    date: '2026-06-28',
-    time: '10:30 AM',
-    type: 'Follow-up',
-    status: 'Upcoming',
-    notes: 'Bi-annual diabetic neuropathy and reflex diagnostics assessment.'
-  },
-  {
-    id: 'APT-1004',
-    patientId: 'PAT-8801',
-    patientName: 'Alexander Sterling',
-    doctorId: 'DOC-103',
-    doctorName: 'Dr. Helen Cho',
-    date: '2026-06-20',
-    time: '11:00 AM',
-    type: 'Consultation',
-    status: 'Completed',
-    notes: 'Urgent consult regarding persistent chest fatigue. Referral given for stress test.'
-  }
-];
+const initialAppointments: Appointment[] = [];
 
-const initialLabReports: LabReport[] = [
-  {
-    id: 'LAB-201',
-    patientId: 'PAT-4212',
-    patientName: 'Evelyn Montgomery',
-    testName: 'Complete Blood Count (CBC) & Iron Panel',
-    category: 'Blood Work',
-    uploadedAt: '2026-06-20 09:15 AM',
-    status: 'Completed',
-    fileUrl: '#',
-    aiSummary: 'The panel reveals mild iron-deficiency anemia indicated by slightly decreased hemoglobin and hematocrit values. Red blood cell indicators suggest minor microcytosis. Platelet counts and total white blood cell counts remain well within clinical reference limits. Suggest dietary modification or iron sulfate supplementation.',
-    indicators: [
-      { name: 'Hemoglobin', value: '11.4 g/dL', referenceRange: '12.0 - 15.5 g/dL', status: 'Low' },
-      { name: 'Hematocrit', value: '34.2 %', referenceRange: '37.0 - 48.0 %', status: 'Low' },
-      { name: 'Red Blood Cells (RBC)', value: '3.9 M/µL', referenceRange: '4.0 - 5.2 M/µL', status: 'Low' },
-      { name: 'White Blood Cells (WBC)', value: '6.5 K/µL', referenceRange: '4.5 - 11.0 K/µL', status: 'Normal' },
-      { name: 'Ferritin', value: '12 ng/mL', referenceRange: '15 - 150 ng/mL', status: 'Low' }
-    ]
-  },
-  {
-    id: 'LAB-202',
-    patientId: 'PAT-8801',
-    patientName: 'Alexander Sterling',
-    testName: 'Comprehensive Cardiovascular EKG Analysis',
-    category: 'Cardiology',
-    uploadedAt: '2026-02-15 10:30 AM',
-    status: 'Completed',
-    fileUrl: '#',
-    aiSummary: 'Resting EKG demonstrates sinus rhythm at 68 bpm. No abnormal ST-segment elevations or depressions detected, ruling out active ischemia. Pr-interval is normal. Occasional isolated unifocal premature ventricular contractions (PVCs) recorded, but clinically insignificant at current density.',
-    indicators: [
-      { name: 'Heart Rate', value: '68 bpm', referenceRange: '60 - 100 bpm', status: 'Normal' },
-      { name: 'PR Interval', value: '162 ms', referenceRange: '120 - 200 ms', status: 'Normal' },
-      { name: 'QTc Interval', value: '412 ms', referenceRange: '350 - 450 ms', status: 'Normal' }
-    ]
-  }
-];
+const initialLabReports: LabReport[] = [];
 
-const initialInvoices: Invoice[] = [
-  {
-    id: 'INV-3011',
-    patientId: 'PAT-8801',
-    patientName: 'Alexander Sterling',
-    date: '2026-06-20',
-    dueDate: '2026-07-20',
-    items: [
-      { description: 'Specialist Cardiovascular Consultation Fee', quantity: 1, unitPrice: 220.00, taxRate: 18 },
-      { description: 'Diagnostic Resting 12-Lead Electrocardiogram', quantity: 1, unitPrice: 85.00, taxRate: 18 },
-      { description: 'Clinical Pathology In-Clinic Specimen Collection', quantity: 1, unitPrice: 15.00, taxRate: 5 }
-    ],
-    status: 'Paid',
-    paymentMethod: 'Insurance',
-    notes: 'Corporate health insurance claim processed successfully. Co-pay of $20 settled.'
-  },
-  {
-    id: 'INV-3012',
-    patientId: 'PAT-4212',
-    patientName: 'Evelyn Montgomery',
-    date: '2026-06-20',
-    dueDate: '2026-07-20',
-    items: [
-      { description: 'Comprehensive Hematology Lab Screening Suite', quantity: 1, unitPrice: 160.00, taxRate: 18 },
-      { description: 'Clinical Dietitian Consultation Session', quantity: 1, unitPrice: 90.00, taxRate: 5 }
-    ],
-    status: 'Pending',
-    notes: 'Awaiting balance payment from private billing account.'
-  }
-];
+const initialInvoices: Invoice[] = [];
 
-const initialEmails: Email[] = [
-  {
-    id: 'EML-501',
-    from: 'notification@hospital.com',
-    to: 'alexander.sterling@gmail.com',
-    subject: 'Appointment Scheduled Confirmation - June 27',
-    body: 'Dear Alexander, this email confirms your upcoming appointment with Dr. Sarah Connor on June 27, 2026 at 09:00 AM. Please arrive 15 minutes early and complete your pre-appointment wellness questionnaires.',
-    timestamp: '2026-06-25 10:00 AM',
-    status: 'Sent'
-  },
-  {
-    id: 'EML-502',
-    from: 'support@hospital.com',
-    to: 'evelyn.mont@yahoo.com',
-    subject: 'Complete Blood Count Lab Results Ready',
-    body: 'Hi Evelyn, your Complete Blood Count (CBC) and Iron Panel results are ready for download in your dashboard. Dr. Helen Cho will discuss these details with you during your virtual session today at 02:00 PM.',
-    timestamp: '2026-06-20 11:30 AM',
-    status: 'Sent'
-  }
-];
+const initialEmails: Email[] = [];
 
-const initialNotifications: NotificationItem[] = [
-  {
-    id: 'NOT-01',
-    title: 'Critical Report Issued',
-    message: 'Evelyn Montgomery blood ferritin indicator flagged Low (12 ng/mL). Please verify clinical priority.',
-    type: 'warning',
-    timestamp: '2026-06-27 08:30 AM',
-    read: false,
-    module: 'Lab'
-  },
-  {
-    id: 'NOT-02',
-    title: 'New Appointment Booked',
-    message: 'Alexander Sterling confirmed slot with Dr. Connor today at 09:00 AM.',
-    type: 'success',
-    timestamp: '2026-06-27 07:15 AM',
-    read: false,
-    module: 'Appointments'
-  },
-  {
-    id: 'NOT-03',
-    title: 'Invoice Payment Overdue',
-    message: 'Patient Evelyn Montgomery balance of $254.50 remains unpaid after 7 days.',
-    type: 'info',
-    timestamp: '2026-06-26 05:00 PM',
-    read: true,
-    module: 'Billing'
-  }
-];
+const initialNotifications: NotificationItem[] = [];
 
-const initialAuditLogs: AuditLog[] = [
-  {
-    id: 'LOG-001',
-    userId: 'SYS-USR-01',
-    username: 'jayasriraam',
-    action: 'User Authentication successfully verified via Secure Token Exchange',
-    module: 'Auth',
-    ipAddress: '192.168.1.104',
-    timestamp: '2026-06-27 02:19 AM',
-    status: 'Success'
-  },
-  {
-    id: 'LOG-002',
-    userId: 'SYS-USR-01',
-    username: 'jayasriraam',
-    action: 'Advanced filters triggered over clinical patient registry directories',
-    module: 'Patients',
-    ipAddress: '192.168.1.104',
-    timestamp: '2026-06-27 02:22 AM',
-    status: 'Success'
-  }
-];
+const initialAuditLogs: AuditLog[] = [];
 
 const initialChatSessions: ChatSession[] = [
   {
     id: 'CHAT-001',
-    title: 'Patient Anemia Diagnostic Planner',
-    pinned: true,
-    createdAt: '2026-06-26 14:00 PM',
+    title: 'New AI Medical Consult',
+    pinned: false,
+    createdAt: new Date().toLocaleString(),
     messages: [
       {
         id: 'MSG-01',
-        sender: 'user',
-        content: 'Evaluate Evelyn Montgomery hematology reports and recommend an agent action plan.',
-        timestamp: '2026-06-26 14:00 PM'
-      },
-      {
-        id: 'MSG-02',
         sender: 'assistant',
-        content: 'Analyzing Evelyn Montgomery’s files... I see **LAB-201** Complete Blood Count & Iron Panel (uploaded June 20). Here is my clinical evaluation and recommended action plan:\n\n### 🧬 Diagnosis Overview\n* **Ferritin (12 ng/mL)**: Low (Clinical reference range: 15 - 150)\n* **Hemoglobin (11.4 g/dL)**: Low (Clinical range: 12.0 - 15.5)\n* **RBC (3.9 M/µL)**: Marginally Low\n\n### 🛡️ Recommended Clinical Actions (Planner Agent Outline):\n1. **Doctor Agent Consultation**: Arrange consultation with Dr. Helen Cho to evaluate potential oral iron gluconate / sulfate prescriptions.\n2. **Billing Agent Audit**: Confirm billing status. Invoice **INV-3012** is currently Pending. Verify insurance co-pay parameters.\n3. **Dietary Scheduling**: Recommend high-bioavailability dietary iron counseling with clinic nutrition specialists.',
-        timestamp: '2026-06-26 14:01 PM',
-        agent: 'planner',
-        status: 'completed'
+        content: 'Greetings. I am your integrated AI Hospital Agent. I can coordinate diagnostics (Lab Agent), invoice checks (Billing Agent), schedule appointments (Appointment Agent), or analyze medical records (Doctor Agent). What clinical queries can I resolve today?',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }
     ]
   }
@@ -456,12 +213,18 @@ const initialChatSessions: ChatSession[] = [
 export const useAppStore = create<AppState>((set) => {
   // Load initial theme or default to dark (high-contrast professional styling)
   const savedTheme = typeof window !== 'undefined' ? (localStorage.getItem('app-theme') as 'light' | 'dark' || 'dark') : 'dark';
-  const savedPins = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('app-pins') || '["Dashboard", "Patients", "Appointments", "AI Chat", "Billing"]') : ["Dashboard", "Patients", "Appointments", "AI Chat", "Billing"];
+  const savedPins = typeof window !== 'undefined' ? 
+    JSON.parse(localStorage.getItem('app-pins') || '[]') : 
+    [];
+
+  const savedUser = typeof window !== 'undefined' ? localStorage.getItem('app-auth-user') : null;
+  const initialUser = savedUser ? JSON.parse(savedUser) : null;
+  const initialIsAuthenticated = !!initialUser;
 
   return {
     // Auth
-    currentUser: null,
-    isAuthenticated: false,
+    currentUser: initialUser,
+    isAuthenticated: initialIsAuthenticated,
     login: (user) => {
       persistAuthUser(user);
       set({
