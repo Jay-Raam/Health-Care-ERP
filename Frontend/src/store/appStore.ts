@@ -3,6 +3,16 @@ import {
   Patient, Appointment, Doctor, LabReport, Invoice, 
   ChatSession, ChatMessage, Email, NotificationItem, AuditLog, UserProfile, UserRole 
 } from '../types';
+import {
+  getMyAppointments,
+  getDoctorsList,
+  searchPatients,
+  bookAppointment,
+  updateAppointmentStatus,
+  rescheduleAppointment,
+  formatTime12to24,
+  calculateEndTime
+} from '../features/appointments/api';
 
 interface AppState {
   // Auth State
@@ -34,9 +44,12 @@ interface AppState {
 
   // Appointments Module
   appointments: Appointment[];
-  addAppointment: (appointment: Omit<Appointment, 'id'>) => void;
-  updateAppointment: (id: string, updated: Partial<Appointment>) => void;
-  deleteAppointment: (id: string) => void;
+  fetchAppointments: () => Promise<void>;
+  fetchDoctors: () => Promise<void>;
+  fetchPatients: () => Promise<void>;
+  addAppointment: (appointment: Omit<Appointment, 'id'>) => Promise<void>;
+  updateAppointment: (id: string, updated: Partial<Appointment>) => Promise<void>;
+  deleteAppointment: (id: string) => Promise<void>;
 
   // Doctors Module
   doctors: Doctor[];
@@ -119,66 +132,7 @@ const persistAuthUser = (user: UserProfile | null) => {
 };
 
 // PREMIUM INITIAL MOCK DATA
-const initialDoctors: Doctor[] = [
-  {
-    id: 'DOC-101',
-    name: 'Dr. Sarah Connor',
-    email: 'sarah.connor@hospital.com',
-    phone: '+1 (555) 019-2834',
-    specialization: 'Cardiologist',
-    department: 'Cardiology',
-    availability: [
-      { day: 'Monday', slots: ['09:00 AM', '10:30 AM', '02:00 PM', '04:00 PM'] },
-      { day: 'Wednesday', slots: ['09:00 AM', '11:00 AM', '03:00 PM'] },
-      { day: 'Friday', slots: ['10:00 AM', '01:30 PM', '04:30 PM'] }
-    ],
-    status: 'Active',
-    rating: 4.9
-  },
-  {
-    id: 'DOC-102',
-    name: 'Dr. David Marcus',
-    email: 'david.marcus@hospital.com',
-    phone: '+1 (555) 018-9922',
-    specialization: 'Neurologist',
-    department: 'Neurology',
-    availability: [
-      { day: 'Tuesday', slots: ['10:00 AM', '11:30 AM', '01:00 PM', '03:30 PM'] },
-      { day: 'Thursday', slots: ['09:00 AM', '10:30 AM', '02:00 PM', '05:00 PM'] }
-    ],
-    status: 'Active',
-    rating: 4.8
-  },
-  {
-    id: 'DOC-103',
-    name: 'Dr. Helen Cho',
-    email: 'helen.cho@hospital.com',
-    phone: '+1 (555) 017-4839',
-    specialization: 'Hematologist & Diagnostics',
-    department: 'Lab & Diagnostics',
-    availability: [
-      { day: 'Monday', slots: ['08:00 AM', '09:30 AM', '11:00 AM'] },
-      { day: 'Tuesday', slots: ['02:00 PM', '03:30 PM', '05:00 PM'] },
-      { day: 'Thursday', slots: ['08:00 AM', '10:00 AM', '01:00 PM'] }
-    ],
-    status: 'Busy',
-    rating: 4.95
-  },
-  {
-    id: 'DOC-104',
-    name: 'Dr. Robert Carter',
-    email: 'robert.carter@hospital.com',
-    phone: '+1 (555) 014-2288',
-    specialization: 'Emergency Physician',
-    department: 'Emergency Medicine',
-    availability: [
-      { day: 'Friday', slots: ['08:00 PM', '10:00 PM', '11:30 PM'] },
-      { day: 'Saturday', slots: ['12:00 PM', '04:00 PM', '08:00 PM'] }
-    ],
-    status: 'On Leave',
-    rating: 4.7
-  }
-];
+const initialDoctors: Doctor[] = [];
 
 const initialPatients: Patient[] = [];
 
@@ -320,19 +274,80 @@ export const useAppStore = create<AppState>((set) => {
 
     // Appointments CRUD
     appointments: initialAppointments,
-    addAppointment: (appointment) => set((state) => {
-      const newApt: Appointment = {
-        ...appointment,
-        id: `APT-${Math.floor(1000 + Math.random() * 9000)}`
-      };
-      return { appointments: [newApt, ...state.appointments] };
-    }),
-    updateAppointment: (id, updated) => set((state) => ({
-      appointments: state.appointments.map(a => a.id === id ? { ...a, ...updated } : a)
-    })),
-    deleteAppointment: (id) => set((state) => ({
-      appointments: state.appointments.filter(a => a.id !== id)
-    })),
+    fetchAppointments: async () => {
+      try {
+        const list = await getMyAppointments();
+        set({ appointments: list });
+      } catch (err) {
+        console.error('Error fetching appointments:', err);
+      }
+    },
+    fetchDoctors: async () => {
+      try {
+        const list = await getDoctorsList();
+        set({ doctors: list });
+      } catch (err) {
+        console.error('Error fetching doctors:', err);
+      }
+    },
+    fetchPatients: async () => {
+      try {
+        const list = await searchPatients('');
+        set({ patients: list });
+      } catch (err) {
+        console.error('Error fetching patients:', err);
+      }
+    },
+    addAppointment: async (appointment) => {
+      try {
+        const startTime24 = formatTime12to24(appointment.time);
+        const endTime24 = calculateEndTime(startTime24);
+        
+        await bookAppointment({
+          doctorId: appointment.doctorId,
+          appointmentDate: appointment.date,
+          startTime: startTime24,
+          endTime: endTime24,
+          reason: `${appointment.type}: ${appointment.notes || 'Consultation request'}`,
+          patientId: appointment.patientId
+        });
+        
+        const list = await getMyAppointments();
+        set({ appointments: list });
+      } catch (err) {
+        console.error('Error booking appointment:', err);
+        throw err;
+      }
+    },
+    updateAppointment: async (id, updated) => {
+      try {
+        if (updated.date || updated.time) {
+          const existing = useAppStore.getState().appointments.find(a => a.id === id);
+          if (existing) {
+            const date = updated.date || existing.date;
+            const time12 = updated.time || existing.time;
+            const startTime24 = formatTime12to24(time12);
+            const endTime24 = calculateEndTime(startTime24);
+            await rescheduleAppointment(id, date, startTime24, endTime24);
+          }
+        } else if (updated.status) {
+          await updateAppointmentStatus(id, updated.status, updated.notes);
+        }
+        const list = await getMyAppointments();
+        set({ appointments: list });
+      } catch (err) {
+        console.error('Error updating appointment:', err);
+      }
+    },
+    deleteAppointment: async (id) => {
+      try {
+        await updateAppointmentStatus(id, 'Cancelled', 'Revoked by patient/staff');
+        const list = await getMyAppointments();
+        set({ appointments: list });
+      } catch (err) {
+        console.error('Error canceling appointment:', err);
+      }
+    },
 
     // Doctors CRUD
     doctors: initialDoctors,

@@ -72,6 +72,47 @@ export class AppointmentService {
     return updated;
   }
 
+  async rescheduleAppointment(
+    appointmentId: string,
+    appointmentDate: Date,
+    startTime: string,
+    endTime: string
+  ): Promise<IAppointmentDocument> {
+    const appointment = await appointmentRepository.findById(appointmentId);
+    if (!appointment) {
+      throw new NotFoundError('Appointment not found');
+    }
+
+    // Check for conflict
+    const bookings = await appointmentRepository.findByDoctorAndDate(appointment.doctor.toString(), appointmentDate);
+    const hasConflict = bookings.some(
+      (b) => b._id.toString() !== appointmentId && b.startTime === startTime && b.status !== AppointmentStatus.CANCELLED
+    );
+
+    if (hasConflict) {
+      throw new ConflictError('The doctor is already booked for this time slot');
+    }
+
+    const updated = await appointmentRepository.update(appointmentId, {
+      $set: { appointmentDate, startTime, endTime }
+    });
+
+    if (!updated) {
+      throw new NotFoundError('Failed to reschedule appointment');
+    }
+
+    emitToUser(updated.patient.toString(), 'appointment_status', {
+      appointmentId: updated._id,
+      status: updated.status,
+      date: updated.appointmentDate,
+      startTime: updated.startTime
+    });
+
+    eventEmitter.emit(HospitalEvents.APPOINTMENT_UPDATED, updated);
+
+    return updated;
+  }
+
   async getPatientAppointments(patientId: string): Promise<IAppointmentDocument[]> {
     return appointmentRepository.findByPatient(patientId);
   }

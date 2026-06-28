@@ -6,7 +6,8 @@ export const bookAppointmentSchema = z.object({
   appointmentDate: z.string().transform((str) => new Date(str)),
   startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Time must be in HH:MM format'),
   endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Time must be in HH:MM format'),
-  reason: z.string().min(5, 'Reason must be at least 5 characters')
+  reason: z.string().min(5, 'Reason must be at least 5 characters'),
+  patientId: z.string().optional()
 });
 
 export const updateAppointmentStatusSchema = z.object({

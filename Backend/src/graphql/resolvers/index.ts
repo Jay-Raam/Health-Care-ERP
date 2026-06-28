@@ -26,16 +26,28 @@ export const resolvers = {
   },
 
   // Field-level resolvers for relations (DataLoaders batching)
+  User: {
+    id: (parent: any) => parent.id || parent._id?.toString()
+  },
+
   Patient: {
+    id: (parent: any) => parent.id || parent._id?.toString(),
     user: async (parent: any, _args: any, context: any) => {
       if (!parent.user) return null;
+      if (typeof parent.user === 'object' && (parent.user.id || parent.user._id)) {
+        return parent.user;
+      }
       return context.loaders.user.load(parent.user.toString());
     }
   },
 
   Doctor: {
+    id: (parent: any) => parent.id || parent._id?.toString(),
     user: async (parent: any, _args: any, context: any) => {
       if (!parent.user) return null;
+      if (typeof parent.user === 'object' && (parent.user.id || parent.user._id)) {
+        return parent.user;
+      }
       return context.loaders.user.load(parent.user.toString());
     }
   },

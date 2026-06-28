@@ -36,6 +36,8 @@ export const connectDatabase = async (): Promise<void> => {
   const connectWithRetry = async () => {
     try {
       await mongoose.connect(MONGO_URI, options);
+      const { seedDatabase } = await import('./seed.js');
+      await seedDatabase();
     } catch (err) {
       logger.error(err, 'Failed to connect to MongoDB on startup - retrying in 5 sec');
       setTimeout(connectWithRetry, 5000);

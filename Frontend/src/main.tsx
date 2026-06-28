@@ -8,6 +8,10 @@ import { loadStoredAuthUser, useAppStore } from './store/appStore';
 bootstrapSession()
   .then((hasSession) => {
     if (!hasSession) {
+      const storedUser = loadStoredAuthUser();
+      if (storedUser) {
+        useAppStore.getState().logout();
+      }
       return;
     }
 

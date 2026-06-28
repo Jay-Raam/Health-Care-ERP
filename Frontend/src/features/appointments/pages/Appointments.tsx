@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppStore } from '@/src/store/appStore';
 import { useNotification } from '@/src/hooks/useApp';
 import { PageHeader, StatusBadge, EmptyState, Modal } from '@/src/components/ui/shared';
@@ -11,15 +11,35 @@ import {
 
 export default function Appointments() {
   const appointments = useAppStore((state) => state.appointments);
+  const fetchAppointments = useAppStore((state) => state.fetchAppointments);
   const addAppointment = useAppStore((state) => state.addAppointment);
   const updateAppointment = useAppStore((state) => state.updateAppointment);
   const deleteAppointment = useAppStore((state) => state.deleteAppointment);
   const patients = useAppStore((state) => state.patients);
+  const fetchPatients = useAppStore((state) => state.fetchPatients);
   const doctors = useAppStore((state) => state.doctors);
+  const fetchDoctors = useAppStore((state) => state.fetchDoctors);
   const pins = useAppStore((state) => state.pins);
   const togglePin = useAppStore((state) => state.togglePin);
+  const currentUser = useAppStore((state) => state.currentUser);
 
   const { triggerToast } = useNotification();
+
+  // Fetch data on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        await fetchDoctors();
+        if (currentUser?.role !== 'PATIENT') {
+          await fetchPatients();
+        }
+        await fetchAppointments();
+      } catch (err) {
+        console.error('Error initializing appointments workspace:', err);
+      }
+    };
+    loadData();
+  }, [currentUser]);
 
   // Workspace Tabs: 'planner' (gorgeous multi-view calendar) or 'directory' (original logs list)
   const [activeWorkspaceTab, setActiveWorkspaceTab] = useState<'planner' | 'directory'>('planner');
@@ -39,31 +59,152 @@ export default function Appointments() {
     notes: ''
   });
 
-  // AI Suggestions Data
-  const aiSuggestions = [
-    {
-      patientId: 'PAT-4212',
-      patientName: 'Evelyn Montgomery',
-      condition: 'Anemia Review Needed',
-      recommendedDoctor: 'Dr. Helen Cho',
-      doctorId: 'DOC-103',
-      recommendedDate: '2026-06-28',
-      recommendedTime: '11:00 AM',
-      type: 'Lab Review' as const,
-      reason: 'Hematology panel has Low iron markers. Prompt clinician review is advised.'
-    },
-    {
-      patientId: 'PAT-3011',
-      patientName: 'Marcus Vance',
-      condition: 'Diabetes Follow-up',
-      recommendedDoctor: 'Dr. David Marcus',
-      doctorId: 'DOC-102',
-      recommendedDate: '2026-06-29',
-      recommendedTime: '03:30 PM',
-      type: 'Follow-up' as const,
-      reason: 'Bi-annual neuropathy assesment is due. Dr. Marcus has 2 open slots.'
+  // Automatically retrieve Patient ID from local storage if user is a Patient
+  useEffect(() => {
+    if (isAddOpen && currentUser?.role === 'PATIENT') {
+      try {
+        const saved = localStorage.getItem('app-auth-user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          if (user && user.role === 'PATIENT' && user.id) {
+            setFormData(prev => ({
+              ...prev,
+              patientId: user.id
+            }));
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching patient ID from local storage:', err);
+      }
     }
-  ];
+  }, [isAddOpen, currentUser]);
+
+  // Generate Appointment Recommendations based on doctor availability, working hours, and history
+  const generateRecommendations = () => {
+    if (doctors.length === 0) {
+      return [];
+    }
+    const list: any[] = [];
+    
+    const activePatients = currentUser?.role === 'PATIENT'
+      ? (currentUser.id ? [{ id: currentUser.id, name: currentUser.firstName ? `${currentUser.firstName} ${currentUser.lastName}` : currentUser.email, email: currentUser.email }] : [])
+      : patients;
+
+    activePatients.forEach((patient, idx) => {
+      const history = appointments.filter(a => a.patientId === patient.id);
+      
+      let preferredDoctor = doctors[idx % doctors.length] || doctors[0];
+      if (history.length > 0) {
+        const docCounts: Record<string, number> = {};
+        history.forEach(h => {
+          docCounts[h.doctorId] = (docCounts[h.doctorId] || 0) + 1;
+        });
+        const preferredDocId = Object.keys(docCounts).reduce((a, b) => docCounts[a] > docCounts[b] ? a : b, preferredDoctor.id);
+        const foundDoc = doctors.find(d => d.id === preferredDocId);
+        if (foundDoc) {
+          preferredDoctor = foundDoc;
+        }
+      }
+
+      let appType = 'Routine Checkup';
+      let message = '';
+      let priority = 'Medium';
+      let duration = '30 mins';
+
+      if (history.length === 0) {
+        appType = 'New Patient Visit';
+        message = `First-time consultation slot optimized based on clinic working hours and ${preferredDoctor.name}'s initial slot availability.`;
+        priority = 'High';
+        duration = '45 mins';
+      } else {
+        const lastApp = history[history.length - 1];
+        if (lastApp.type === 'Consultation') {
+          appType = 'Follow-up Appointment';
+          message = `Suggested follow-up schedule aligned with preferred doctor ${preferredDoctor.name} to review progress from the previous appointment.`;
+          priority = 'High';
+          duration = '30 mins';
+        } else if (lastApp.type === 'Lab Review') {
+          appType = 'Medication Review';
+          message = `Recommended medication checkup scheduled according to standard interval guidelines and physician availability.`;
+          priority = 'Medium';
+          duration = '30 mins';
+        } else {
+          appType = 'Annual Health Check';
+          message = `Periodic routine preventive health checkup suggested based on department availability and clinic scheduling optimization.`;
+          priority = 'Low';
+          duration = '60 mins';
+        }
+      }
+
+      let suggestedDate = '2026-06-29';
+      let suggestedTime = '10:00 AM';
+
+      if (preferredDoctor && preferredDoctor.availability && preferredDoctor.availability.length > 0) {
+        const availabilityDay = preferredDoctor.availability[0];
+        const dayOfWeek = availabilityDay.day;
+        const timeSlot = availabilityDay.slots[0] || '10:00 AM';
+        suggestedTime = timeSlot;
+
+        if (dayOfWeek === 'Monday') {
+          suggestedDate = '2026-06-29';
+        } else if (dayOfWeek === 'Tuesday') {
+          suggestedDate = '2026-06-30';
+        } else if (dayOfWeek === 'Wednesday') {
+          suggestedDate = '2026-07-01';
+        } else if (dayOfWeek === 'Thursday') {
+          suggestedDate = '2026-07-02';
+        } else if (dayOfWeek === 'Friday') {
+          suggestedDate = '2026-07-03';
+        }
+      }
+
+      if (preferredDoctor && preferredDoctor.availability && preferredDoctor.availability.length > 0) {
+        const slots = preferredDoctor.availability[0].slots;
+        for (const slot of slots) {
+          const hasConflict = appointments.some(a => 
+            a.doctorId === preferredDoctor.id && 
+            a.date === suggestedDate && 
+            a.time === slot
+          );
+          if (!hasConflict) {
+            suggestedTime = slot;
+            break;
+          }
+        }
+      }
+
+      let location = 'Main Clinic - 1st Floor';
+      if (preferredDoctor.department === 'Cardiology') {
+        location = 'Heart & Vascular Center - Suite 4';
+      } else if (preferredDoctor.department === 'Neurology') {
+        location = 'Neurology Dept - Wing B';
+      } else if (preferredDoctor.department === 'Lab & Diagnostics') {
+        location = 'Diagnostics Lab - Wing A';
+      } else if (preferredDoctor.department === 'Emergency Medicine') {
+        location = 'Emergency Suite - Ground Floor';
+      }
+
+      list.push({
+        patientId: patient.id,
+        patientName: patient.name,
+        appointmentType: appType,
+        message: message,
+        recommendedDoctor: preferredDoctor.name,
+        specialty: preferredDoctor.specialization || 'Specialist',
+        doctorId: preferredDoctor.id,
+        suggestedDate: suggestedDate,
+        suggestedTime: suggestedTime,
+        duration: duration,
+        doctorStatus: preferredDoctor.status || 'Active',
+        priority: priority,
+        location: location
+      });
+    });
+
+    return list;
+  };
+
+  const appointmentRecommendations = generateRecommendations();
 
   // Filters appointments
   const filteredAppointments = appointments.filter((apt) => {
@@ -74,19 +215,56 @@ export default function Appointments() {
 
   const handleAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.patientId || !formData.doctorId) {
+    
+    let resolvedPatientId = formData.patientId;
+    // Fallback/Ensure retrieved from local storage if patient
+    if (currentUser?.role === 'PATIENT') {
+      try {
+        const saved = localStorage.getItem('app-auth-user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          if (user && user.role === 'PATIENT' && user.id) {
+            resolvedPatientId = user.id;
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing user from localStorage:', err);
+      }
+    }
+
+    if (!resolvedPatientId || !formData.doctorId) {
       triggerToast('Validation Error', 'Please select both patient and doctor.', 'error');
       return;
     }
 
-    const patient = patients.find(p => p.id === formData.patientId);
+    const patient = patients.find(p => p.id === resolvedPatientId);
     const doctor = doctors.find(d => d.id === formData.doctorId);
 
-    if (!patient || !doctor) return;
+    let resolvedPatientName = '';
+    if (patient) {
+      resolvedPatientName = patient.name;
+    } else if (currentUser && currentUser.role === 'PATIENT' && currentUser.id === resolvedPatientId) {
+      resolvedPatientName = currentUser.name;
+    } else {
+      try {
+        const saved = localStorage.getItem('app-auth-user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          if (user && user.id === resolvedPatientId) {
+            resolvedPatientName = user.name;
+          }
+        }
+      } catch {}
+    }
+
+    if (!resolvedPatientName || !doctor) {
+      triggerToast('Validation Error', 'Patient record or clinician not found.', 'error');
+      return;
+    }
 
     addAppointment({
-      patientId: patient.id,
-      patientName: patient.name,
+      patientId: resolvedPatientId,
+      patientName: resolvedPatientName,
       doctorId: doctor.id,
       doctorName: doctor.name,
       date: formData.date,
@@ -100,8 +278,21 @@ export default function Appointments() {
     setIsAddOpen(false);
     
     // Reset form
+    let resetPatientId = '';
+    if (currentUser?.role === 'PATIENT') {
+      try {
+        const saved = localStorage.getItem('app-auth-user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          if (user && user.role === 'PATIENT' && user.id) {
+            resetPatientId = user.id;
+          }
+        }
+      } catch {}
+    }
+
     setFormData({
-      patientId: '',
+      patientId: resetPatientId,
       doctorId: '',
       date: '2026-06-27',
       time: '09:00 AM',
@@ -122,27 +313,49 @@ export default function Appointments() {
     }
   };
 
-  // 1-Click AI Suggestion Booking
-  const handleAIScheduleBook = (sug: typeof aiSuggestions[0]) => {
+  // Handle booking recommendation
+  const handleRecommendationBook = (rec: any) => {
+    let mappedType: 'Consultation' | 'Follow-up' | 'Emergency' | 'Operation' | 'Lab Review' = 'Consultation';
+    if (rec.appointmentType.includes('Follow-up') || rec.appointmentType.includes('Medication')) {
+      mappedType = 'Follow-up';
+    } else if (rec.appointmentType.includes('Lab')) {
+      mappedType = 'Lab Review';
+    }
+
     addAppointment({
-      patientId: sug.patientId,
-      patientName: sug.patientName,
-      doctorId: sug.doctorId,
-      doctorName: sug.recommendedDoctor,
-      date: sug.recommendedDate,
-      time: sug.recommendedTime,
-      type: sug.type,
+      patientId: rec.patientId,
+      patientName: rec.patientName,
+      doctorId: rec.doctorId,
+      doctorName: rec.recommendedDoctor,
+      date: rec.suggestedDate,
+      time: rec.suggestedTime,
+      type: mappedType,
       status: 'Upcoming',
-      notes: `AI Recommended: ${sug.reason}`
+      notes: `Recommended: ${rec.message} (Type: ${rec.appointmentType}, Duration: ${rec.duration})`
     });
 
-    triggerToast('Optimized Booking Saved', `Successfully booked ${sug.patientName} with ${sug.recommendedDoctor} via AI 1-Click.`, 'success');
+    triggerToast('Appointment Booked', `Successfully scheduled ${rec.appointmentType} with ${rec.recommendedDoctor}.`, 'success');
   };
 
   const handleQuickBook = (prefilled?: { date: string; time: string }) => {
+    let initialPatientId = '';
+    if (currentUser?.role === 'PATIENT') {
+      try {
+        const saved = localStorage.getItem('app-auth-user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          if (user && user.role === 'PATIENT' && user.id) {
+            initialPatientId = user.id;
+          }
+        }
+      } catch (err) {
+        console.error('Error parsing user from localStorage:', err);
+      }
+    }
+
     if (prefilled) {
       setFormData({
-        patientId: '',
+        patientId: initialPatientId,
         doctorId: '',
         date: prefilled.date,
         time: prefilled.time,
@@ -151,7 +364,7 @@ export default function Appointments() {
       });
     } else {
       setFormData({
-        patientId: '',
+        patientId: initialPatientId,
         doctorId: '',
         date: '2026-06-27',
         time: '09:00 AM',
@@ -219,40 +432,77 @@ export default function Appointments() {
           {/* Majestic Interactive multi-view Calendar with Drag and Drop rescheduling */}
           <CalendarComponent onBookClick={handleQuickBook} />
 
-          {/* AI Clinical Predictive Scheduler optimization suggestions */}
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-purple-500/5 p-5 space-y-4">
+          {/* Appointment Recommendations */}
+          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-500/5 dark:bg-zinc-500/5 p-5 space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-mono font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles size={14} className="text-purple-500 animate-pulse" />
-                AI Predictive Schedule Optimizer
+              <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                <CalendarDays size={14} className="text-zinc-500" />
+                Appointment Recommendations
               </span>
-              <span className="text-[10px] font-mono text-purple-500 bg-purple-100 dark:bg-purple-950/40 px-2 py-0.5 rounded font-bold">
-                HIPAA Compliant
+              <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-950/40 px-2 py-0.5 rounded font-bold">
+                Schedule Coordinator
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {aiSuggestions.map((sug, i) => (
-                <div key={i} className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-purple-200/50 dark:border-purple-950/40 space-y-3 flex flex-col justify-between text-xs">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-zinc-950 dark:text-white">{sug.patientName}</span>
-                      <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-sm text-[9px] font-mono font-bold">
-                        {sug.condition}
-                      </span>
+              {appointmentRecommendations.map((rec, i) => (
+                <div key={i} className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-800 space-y-3 flex flex-col justify-between text-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-xs animate-in fade-in zoom-in-95 duration-200">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-zinc-950 dark:text-white text-sm">{rec.patientName}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`px-2 py-0.5 rounded-sm text-[9px] font-mono font-bold ${
+                          rec.priority === 'High' 
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' 
+                            : rec.priority === 'Medium'
+                            ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                            : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400'
+                        }`}>
+                          {rec.priority} Priority
+                        </span>
+                        <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-850 text-zinc-600 dark:text-zinc-300 rounded-sm text-[9px] font-semibold">
+                          {rec.appointmentType}
+                        </span>
+                      </div>
                     </div>
-                    <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-[11px]">{sug.reason}</p>
-                    <div className="pt-2 font-mono text-[10px] text-zinc-400 space-y-0.5">
-                      <div>Recommended Doctor: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{sug.recommendedDoctor}</span></div>
-                      <div>Slot suggestion: <span className="text-purple-500 font-semibold">{sug.recommendedDate} at {sug.recommendedTime}</span></div>
+                    
+                    <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-[11px] italic bg-zinc-50 dark:bg-zinc-950/20 p-2 rounded-md">
+                      {rec.message}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                      <div>
+                        <span className="text-zinc-400">Doctor:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.recommendedDoctor}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Specialty:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.specialty}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Status:</span> <span className={`font-semibold ${
+                          rec.doctorStatus === 'Active' || rec.doctorStatus === 'Available'
+                            ? 'text-emerald-500'
+                            : rec.doctorStatus === 'Busy'
+                            ? 'text-amber-500'
+                            : 'text-rose-500'
+                        }`}>{rec.doctorStatus}</span>
+                      </div>
+                      <div>
+                        <span className="text-zinc-400">Duration:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.duration}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-zinc-400">Location:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.location}</span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="text-zinc-400">Suggested:</span> <span className="text-blue-500 dark:text-blue-400 font-semibold">{rec.suggestedDate} at {rec.suggestedTime}</span>
+                      </div>
                     </div>
                   </div>
                   <button
-                    onClick={() => handleAIScheduleBook(sug)}
-                    className="mt-3.5 w-full py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white font-semibold text-center transition-all flex items-center justify-center gap-1 cursor-pointer"
+                    onClick={() => handleRecommendationBook(rec)}
+                    className="mt-3.5 w-full py-1.5 rounded-lg bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-center transition-all flex items-center justify-center gap-1 cursor-pointer"
                   >
                     <Check size={12} />
-                    Book Optimized Slot
+                    Book Appointment
                   </button>
                 </div>
               ))}
@@ -433,40 +683,77 @@ export default function Appointments() {
               )}
             </div>
 
-            {/* AI Clinical Predictive Scheduler optimization suggestions */}
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-purple-500/5 p-5 space-y-4">
+            {/* Appointment Recommendations */}
+            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-500/5 dark:bg-zinc-500/5 p-5 space-y-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-mono font-medium text-purple-600 dark:text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <Sparkles size={14} className="text-purple-500 animate-pulse" />
-                  AI Predictive Schedule Optimizer
+                <span className="text-xs font-mono font-medium text-zinc-600 dark:text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CalendarDays size={14} className="text-zinc-500" />
+                  Appointment Recommendations
                 </span>
-                <span className="text-[10px] font-mono text-purple-500 bg-purple-100 dark:bg-purple-950/40 px-2 py-0.5 rounded font-bold">
-                  HIPAA Compliant
+                <span className="text-[10px] font-mono text-zinc-500 bg-zinc-100 dark:bg-zinc-950/40 px-2 py-0.5 rounded font-bold">
+                  Schedule Coordinator
                 </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {aiSuggestions.map((sug, i) => (
-                  <div key={i} className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-purple-200/50 dark:border-purple-950/40 space-y-3 flex flex-col justify-between text-xs">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-zinc-950 dark:text-white">{sug.patientName}</span>
-                        <span className="px-1.5 py-0.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-sm text-[9px] font-mono font-bold">
-                          {sug.condition}
-                        </span>
+                {appointmentRecommendations.map((rec, i) => (
+                  <div key={i} className="p-4 rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200/50 dark:border-zinc-850 space-y-3 flex flex-col justify-between text-xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all shadow-xs animate-in fade-in zoom-in-95 duration-200">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-bold text-zinc-950 dark:text-white text-sm">{rec.patientName}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`px-2 py-0.5 rounded-sm text-[9px] font-mono font-bold ${
+                            rec.priority === 'High' 
+                              ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400' 
+                              : rec.priority === 'Medium'
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400'
+                          }`}>
+                            {rec.priority} Priority
+                          </span>
+                          <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300 rounded-sm text-[9px] font-semibold">
+                            {rec.appointmentType}
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-[11px]">{sug.reason}</p>
-                      <div className="pt-2 font-mono text-[10px] text-zinc-400 space-y-0.5">
-                        <div>Recommended Doctor: <span className="font-semibold text-zinc-700 dark:text-zinc-300">{sug.recommendedDoctor}</span></div>
-                        <div>Slot suggestion: <span className="text-purple-500 font-semibold">{sug.recommendedDate} at {sug.recommendedTime}</span></div>
+                      
+                      <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed text-[11px] italic bg-zinc-50 dark:bg-zinc-950/20 p-2 rounded-md">
+                        {rec.message}
+                      </p>
+
+                      <div className="grid grid-cols-2 gap-2 pt-1 font-mono text-[10px] text-zinc-500 dark:text-zinc-400">
+                        <div>
+                          <span className="text-zinc-400">Doctor:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.recommendedDoctor}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-400">Specialty:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.specialty}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-400">Status:</span> <span className={`font-semibold ${
+                            rec.doctorStatus === 'Active' || rec.doctorStatus === 'Available'
+                              ? 'text-emerald-500'
+                              : rec.doctorStatus === 'Busy'
+                              ? 'text-amber-500'
+                              : 'text-rose-500'
+                          }`}>{rec.doctorStatus}</span>
+                        </div>
+                        <div>
+                          <span className="text-zinc-400">Duration:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.duration}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-zinc-400">Location:</span> <span className="font-semibold text-zinc-700 dark:text-zinc-300">{rec.location}</span>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-zinc-400">Suggested:</span> <span className="text-blue-500 dark:text-blue-400 font-semibold">{rec.suggestedDate} at {rec.suggestedTime}</span>
+                        </div>
                       </div>
                     </div>
                     <button
-                      onClick={() => handleAIScheduleBook(sug)}
-                      className="mt-3.5 w-full py-1.5 rounded-md bg-purple-600 hover:bg-purple-700 text-white font-semibold text-center transition-all flex items-center justify-center gap-1 cursor-pointer"
+                      onClick={() => handleRecommendationBook(rec)}
+                      className="mt-3.5 w-full py-1.5 rounded-lg bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-center transition-all flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <Check size={12} />
-                      Book Optimized Slot
+                      Book Appointment
                     </button>
                   </div>
                 ))}
@@ -480,20 +767,22 @@ export default function Appointments() {
       <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Schedule Medical Slot">
         <form onSubmit={handleAddSubmit} className="space-y-4 text-xs">
           
-          <div className="space-y-1.5">
-            <label className="block font-semibold">Select Patient Record *</label>
-            <select
-              value={formData.patientId}
-              onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
-              className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2"
-              required
-            >
-              <option value="">-- Choose patient --</option>
-              {patients.map(p => (
-                <option key={p.id} value={p.id}>{p.name} ({p.id})</option>
-              ))}
-            </select>
-          </div>
+          {currentUser?.role !== 'PATIENT' && (
+            <div className="space-y-1.5">
+              <label className="block font-semibold">Select Patient Record *</label>
+              <select
+                value={formData.patientId}
+                onChange={(e) => setFormData({ ...formData, patientId: e.target.value })}
+                className="w-full rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-3 py-2"
+                required
+              >
+                <option value="">-- Choose patient --</option>
+                {patients.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} ({p.id})</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <label className="block font-semibold">Select Assigned Clinician *</label>

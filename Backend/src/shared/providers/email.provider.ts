@@ -42,7 +42,7 @@ export const sendMail = async (options: SendEmailOptions): Promise<void> => {
       to: options.to,
       subject: options.subject,
       html: options.html,
-      text: options.text || 'This email requires HTML view.'
+      text: options.text,
     };
     
     const info = await client.sendMail(mailOptions);

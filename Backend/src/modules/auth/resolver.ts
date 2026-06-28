@@ -45,7 +45,7 @@ export const authResolvers = {
         context.res.cookie('refreshToken', result.refreshToken, {
           httpOnly: true,
           secure: config.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: config.NODE_ENV === 'production' ? 'strict' : 'lax',
           maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
           path: '/'
         });
@@ -108,7 +108,7 @@ export const authResolvers = {
         context.res.cookie('refreshToken', result.refreshToken, {
           httpOnly: true,
           secure: config.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: config.NODE_ENV === 'production' ? 'strict' : 'lax',
           maxAge: 7 * 24 * 60 * 60 * 1000,
           path: '/'
         });

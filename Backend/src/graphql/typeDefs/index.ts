@@ -212,6 +212,7 @@ export const typeDefs = `
     startTime: String!
     endTime: String!
     reason: String!
+    patientId: String
   }
 
   input BillItemInput {
@@ -275,6 +276,7 @@ export const typeDefs = `
     # Appointment mutations
     bookAppointment(input: BookAppointmentInput!): Appointment!
     updateAppointmentStatus(id: ID!, status: String!, clinicalNotes: String): Appointment!
+    rescheduleAppointment(id: ID!, date: String!, startTime: String!, endTime: String!): Appointment!
 
     # Billing mutations
     createBill(input: CreateBillInput!): Bill!

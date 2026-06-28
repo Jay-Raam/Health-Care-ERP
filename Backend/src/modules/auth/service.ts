@@ -13,8 +13,9 @@ import {
   AuthorizationError
 } from '../../shared/errors/AppError.js';
 import { emailQueue } from '../../shared/queue/bullmq.js';
-import { templates } from '../../shared/providers/email.provider.js';
+import { sendMail, templates } from '../../shared/providers/email.provider.js';
 import { logger } from '../../shared/logs/logger.js';
+import { text } from 'pdfkit/js/mixins/text';
 
 export class AuthService {
   // Helper: Generate JWT tokens
@@ -76,7 +77,14 @@ export class AuthService {
     }
 
     if (!user.isVerified) {
-      throw new AuthenticationError('Please verify your email address before logging in');
+      // Generate & send verification OTP
+      await sendMail({
+        to: user.email,
+        subject: 'Verify your AI Hospital Account',
+        html: templates.otp('Your OTP has been sent to your email. Please check your inbox.'),
+        text: 'Your OTP has been sent to your email. Please check your inbox.'
+      });
+      throw new AuthenticationError('Please verify your email address before logging in. A verification OTP has been sent to your email.');
     }
 
     const payload: JWTPayload = {

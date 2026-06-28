@@ -22,9 +22,19 @@ export interface GraphQLContext {
   deviceInfo: string;
   ipAddress: string;
   pubSub: typeof pubSub;
+  req?: any;
+  res?: any;
 }
 
-export const createContext = async ({ request }: { request: Request }): Promise<GraphQLContext> => {
+export const createContext = async ({ 
+  request, 
+  req, 
+  res 
+}: { 
+  request: Request; 
+  req?: any; 
+  res?: any; 
+}): Promise<GraphQLContext> => {
   const authHeader = request.headers.get('authorization');
   let user = null;
 
@@ -52,6 +62,8 @@ export const createContext = async ({ request }: { request: Request }): Promise<
     logger,
     deviceInfo: userAgent,
     ipAddress,
-    pubSub
+    pubSub,
+    req,
+    res
   };
 };

@@ -5,9 +5,19 @@ const COOKIE_REFRESH_PLACEHOLDER = 'cookie-session';
 
 export const setAccessToken = (token: string) => {
   inMemoryAccessToken = token;
+  if (typeof window !== 'undefined') {
+    if (token) {
+      window.localStorage.setItem('app-access-token', token);
+    } else {
+      window.localStorage.removeItem('app-access-token');
+    }
+  }
 };
 
 export const getAccessToken = () => {
+  if (!inMemoryAccessToken && typeof window !== 'undefined') {
+    inMemoryAccessToken = window.localStorage.getItem('app-access-token') || '';
+  }
   return inMemoryAccessToken;
 };
 
@@ -80,6 +90,10 @@ apiClient.interceptors.response.use(
 
 // Function to run on application startup to perform a silent refresh and restore session
 export const bootstrapSession = async (): Promise<boolean> => {
+  const existingToken = getAccessToken();
+  if (existingToken) {
+    return true;
+  }
   try {
     const refreshMutation = `
       mutation {
@@ -110,12 +124,30 @@ export const bootstrapSession = async (): Promise<boolean> => {
 // Unified helper to execute GraphQL Queries and Mutations
 export async function graphqlRequest<T = any>(
   query: string,
-  variables?: Record<string, any>
+  variables?: Record<string, any>,
+  isRetry = false
 ): Promise<T> {
   const response = await apiClient.post('', { query, variables });
   
   if (response.data.errors && response.data.errors.length > 0) {
     const errorMsg = response.data.errors[0].message || 'GraphQL Execution Error';
+    
+    if ((errorMsg === 'Authentication required' || errorMsg.includes('Authentication required')) && !isRetry) {
+      console.log('Authentication error detected in GraphQL response. Attempting silent token refresh...');
+      const refreshed = await bootstrapSession();
+      if (refreshed) {
+        console.log('Silent token refresh succeeded. Retrying GraphQL request...');
+        return graphqlRequest<T>(query, variables, true);
+      } else {
+        console.warn('Silent token refresh failed. Logging out...');
+        const { useAppStore } = await import('../store/appStore');
+        useAppStore.getState().logout();
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+      }
+    }
+    
     throw new Error(errorMsg);
   }
   
