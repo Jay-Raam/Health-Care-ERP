@@ -28,11 +28,11 @@ graph TD
 
 ## 🛡️ Enterprise Security Hardening
 
-To comply with **HIPAA** and **SOC2 Type II** security requirements, the platform enforces five layers of defense:
+Engineered in alignment with **HIPAA privacy principles** and **SOC2 security best practices**, the architecture implements five defensive layers:
 
 1. **In-Memory JWT Access Token Storage**
    * The short-lived `accessToken` is stored in the frontend's local closure memory (`inMemoryAccessToken`).
-   * No access tokens are ever written to `localStorage` or `sessionStorage`, making the client **100% immune to Cross-Site Scripting (XSS)** token theft.
+   * No access tokens are ever written to `localStorage` or `sessionStorage`, eliminating browser-based token exfiltration vulnerabilities.
    
 2. **Secure HTTP-Only Cookies via Vite Proxy**
    * The `refreshToken` is set by the backend server in the `Set-Cookie` response headers with `HttpOnly`, `Secure`, and `SameSite=Strict` flags.
@@ -41,10 +41,10 @@ To comply with **HIPAA** and **SOC2 Type II** security requirements, the platfor
 
 3. **Session Hijacking Fingerprint Validation**
    * The database stores the client's **IP Address** and browser **User-Agent Fingerprint** alongside active session records.
-   * If a `refreshToken` call comes from a different IP or device, the backend immediately treats it as a security breach: it purges all active sessions for that user and rejects the token.
+   * If a `refreshToken` call comes from a different IP or device, the backend immediately treats it as a security anomaly: it purges active sessions for that user and rejects the token.
 
-4. **HIPAA Chart Access Log Auditing**
-   * Every clinical chart read query (e.g., `patientProfile`) logs a HIPAA compliance footprint containing the accessing clinician's ID, accessed patient ID, IP address, and request ID.
+4. **Patient Health Information (PHI) Audit Trail**
+   * Following HIPAA audit trail design recommendations, every clinical chart read query (e.g., `patientProfile`) logs a tamper-evident audit entry capturing the accessing clinician's ID, accessed patient ID, client IP address, and request trace ID.
 
 5. **Production GraphQL Introspection Shield**
    * In production (`NODE_ENV === 'production'`), Express intercepts incoming schema queries (`__schema` or `__type`) and blocks them, preventing attackers from mapping out schema database models.
