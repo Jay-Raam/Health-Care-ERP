@@ -1,5 +1,11 @@
 # AI Hospital Agent System (POH)
 
+[![CI](https://github.com/Jay-Raam/Health-Care-ERP/actions/workflows/ci.yml/badge.svg)](https://github.com/Jay-Raam/Health-Care-ERP/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?logo=node.js)](https://nodejs.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![GraphQL](https://img.shields.io/badge/GraphQL-Yoga-E10098?logo=graphql)](https://the-guild.dev/graphql/yoga-server)
+
 An enterprise-grade, secure clinical automation and physician assistant platform. Built with a high-performance React frontend, Express/GraphQL Yoga backend, and an intelligent **Planner-Worker Multi-Agent Orchestration** framework powered by 11-model OpenRouter failovers.
 
 ---
